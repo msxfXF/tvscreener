@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tvscreener"
-version = "0.0.13"
+version = "0.1.0"
 description = "TradingView Screener API"
 readme = "README.md"
 authors = [
@@ -15,7 +15,12 @@ requires-python = ">=3.10"
 keywords = ["finance", "tradingview", "technical-analysis"]
 dependencies = [
     "pandas",
-    "requests>=2.27.1"
+    "requests>=2.27.1",
+    "jinja2",
+    "fastapi>=0.110.0",
+    "uvicorn[standard]",
+    "pydantic-settings>=2.0",
+    "python-dotenv"
 ]
 urls = {"Homepage" = "https://github.com/houseofai/tvscreener"}
 classifiers = [

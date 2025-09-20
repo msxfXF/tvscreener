@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TVScreener Monitoring Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-w6VYj1WFJsbgx5caX5/C/PObbIVdQydb9h9NP7VDaRao7IhiHBpjz2uVH54camz1" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem 4rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(16px);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+        tr:hover {
+            background: rgba(30, 41, 59, 0.6);
+            cursor: pointer;
+        }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .status.ok {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+        .status.degraded {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+        }
+        .chart-container {
+            position: relative;
+            height: 360px;
+        }
+        .muted {
+            color: #94a3b8;
+        }
+        @media (max-width: 768px) {
+            .meta {
+                flex-direction: column;
+            }
+            th, td {
+                padding: 0.5rem 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>TVScreener Monitoring Dashboard</h1>
+            <p class="muted">Tracking analyst rating changes for the top {{ settings.range_end - settings.range_start }} instruments every {{ settings.interval_seconds // 60 }} minutes.</p>
+        </header>
+        <section class="meta">
+            <div class="card">
+                <strong>Status</strong>
+                <div id="statusBadge" class="status">Loading…</div>
+                <p class="muted">Last cycle: <span id="lastRun">—</span></p>
+            </div>
+            <div class="card">
+                <strong>Snapshots</strong>
+                <p class="muted"><span id="totalSnapshots">0</span> total | <span id="totalChanges">0</span> rating changes</p>
+                <p class="muted">Latest snapshot: <span id="latestSnapshot">—</span></p>
+            </div>
+        </section>
+
+        <section class="card" style="margin-bottom:2rem;">
+            <h2 style="margin-top:0">Recent Analyst Rating Changes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Changed At</th>
+                        <th>Old Rating</th>
+                        <th>New Rating</th>
+                        <th>Price Before</th>
+                        <th>Price After</th>
+                    </tr>
+                </thead>
+                <tbody id="changesBody">
+                    <tr><td colspan="6" class="muted">Loading…</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2 style="margin-top:0">Price History</h2>
+            <p class="muted" id="chartCaption">Select a row above to load price history.</p>
+            <div class="chart-container">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const statusBadge = document.getElementById('statusBadge');
+        const lastRunEl = document.getElementById('lastRun');
+        const totalSnapshotsEl = document.getElementById('totalSnapshots');
+        const totalChangesEl = document.getElementById('totalChanges');
+        const latestSnapshotEl = document.getElementById('latestSnapshot');
+        const changesBody = document.getElementById('changesBody');
+        const chartCaption = document.getElementById('chartCaption');
+        const chartCtx = document.getElementById('historyChart');
+
+        let historyChart = null;
+
+        function formatDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            return date.toLocaleString();
+        }
+
+        function setStatus(status, lastRun) {
+            statusBadge.className = `status ${status}`;
+            statusBadge.textContent = status === 'ok' ? 'Running' : 'Degraded';
+            lastRunEl.textContent = formatDate(lastRun);
+        }
+
+        async function refreshStatus() {
+            const response = await fetch('/healthz');
+            const data = await response.json();
+            setStatus(data.status, data.state.last_run);
+            totalSnapshotsEl.textContent = data.state.total_snapshots;
+            totalChangesEl.textContent = data.state.total_rating_changes;
+            latestSnapshotEl.textContent = formatDate(data.latest_snapshot);
+        }
+
+        function renderChanges(items) {
+            if (!items.length) {
+                changesBody.innerHTML = '<tr><td colspan="6" class="muted">No rating changes recorded yet.</td></tr>';
+                return;
+            }
+            changesBody.innerHTML = '';
+            for (const item of items) {
+                const tr = document.createElement('tr');
+                tr.dataset.symbol = item.symbol;
+                tr.innerHTML = `
+                    <td>${item.symbol}</td>
+                    <td>${formatDate(item.changed_at)}</td>
+                    <td>${item.old_rating ?? '—'}</td>
+                    <td>${item.new_rating ?? '—'}</td>
+                    <td>${item.price_before ?? '—'}</td>
+                    <td>${item.price_after ?? '—'}</td>
+                `;
+                tr.addEventListener('click', () => loadHistory(item.symbol));
+                changesBody.appendChild(tr);
+            }
+        }
+
+        async function refreshChanges() {
+            const response = await fetch('/api/rating_changes?limit=100');
+            const data = await response.json();
+            renderChanges(data.items);
+        }
+
+        async function loadHistory(symbol) {
+            chartCaption.textContent = `Loading price history for ${symbol}…`;
+            const response = await fetch(`/api/symbol/${encodeURIComponent(symbol)}/history?limit=200`);
+            const data = await response.json();
+            const labels = data.items.map(item => formatDate(item.retrieved_at));
+            const prices = data.items.map(item => item.price);
+            chartCaption.textContent = `Price history for ${symbol}`;
+            if (historyChart) {
+                historyChart.destroy();
+            }
+            historyChart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: symbol,
+                        data: prices,
+                        tension: 0.3,
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.25)',
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' } },
+                        y: { ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } },
+                        tooltip: { callbacks: { label: (ctx) => `Price: ${ctx.parsed.y}` } }
+                    }
+                }
+            });
+        }
+
+        async function bootstrap() {
+            await refreshStatus();
+            await refreshChanges();
+            setInterval(refreshStatus, 60000);
+            setInterval(refreshChanges, 120000);
+        }
+
+        bootstrap();
+    </script>
+</body>
+</html>
