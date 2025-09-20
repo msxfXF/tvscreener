@@ -1,0 +1,1 @@
+recursive-include tvscreener/monitoring/templates *.html

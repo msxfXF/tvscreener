@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TVScreener Monitoring Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-w6VYj1WFJsbgx5caX5/C/PObbIVdQydb9h9NP7VDaRao7IhiHBpjz2uVH54camz1" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem 4rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(16px);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+        tr {
+            transition: background 0.2s ease;
+        }
+        tr:hover {
+            background: rgba(30, 41, 59, 0.6);
+            cursor: pointer;
+        }
+        tr.active {
+            background: rgba(56, 189, 248, 0.18);
+        }
+        tr.active:hover {
+            background: rgba(56, 189, 248, 0.28);
+        }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .status.ok {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+        .status.degraded {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+        }
+        .chart-container {
+            position: relative;
+            height: 360px;
+        }
+        .muted {
+            color: #94a3b8;
+        }
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            background: rgba(148, 163, 184, 0.12);
+            white-space: nowrap;
+        }
+        .pill.buy {
+            background: rgba(34, 197, 94, 0.18);
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.4);
+        }
+        .pill.sell {
+            background: rgba(248, 113, 113, 0.18);
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.4);
+        }
+        .pill.neutral {
+            background: rgba(14, 165, 233, 0.18);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.35);
+        }
+        .symbol-insights {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+            align-items: stretch;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .info-item {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 12px;
+            padding: 0.85rem;
+            min-height: 88px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .info-item span {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+        }
+        .info-item strong {
+            margin-top: 0.5rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            word-break: break-word;
+        }
+        .ratings-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.75rem 0 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .ratings-list li {
+            background: rgba(148, 163, 184, 0.14);
+            border-radius: 999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            color: #cbd5f5;
+        }
+        .company-description {
+            margin-top: 0.5rem;
+            line-height: 1.6;
+        }
+        @media (max-width: 1100px) {
+            .symbol-insights {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .meta {
+                flex-direction: column;
+            }
+            th, td {
+                padding: 0.5rem 0.75rem;
+            }
+            .chart-container {
+                height: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>TVScreener Monitoring Dashboard</h1>
+            <p class="muted">Tracking analyst rating changes for the top {{ settings.range_end - settings.range_start }} instruments every {{ settings.interval_seconds // 60 }} minutes.</p>
+        </header>
+        <section class="meta">
+            <div class="card">
+                <strong>Status</strong>
+                <div id="statusBadge" class="status">Loading…</div>
+                <p class="muted">Last cycle: <span id="lastRun">—</span></p>
+            </div>
+            <div class="card">
+                <strong>Snapshots</strong>
+                <p class="muted"><span id="totalSnapshots">0</span> total | <span id="totalChanges">0</span> rating changes</p>
+                <p class="muted">Latest snapshot: <span id="latestSnapshot">—</span></p>
+            </div>
+        </section>
+
+        <section class="card" style="margin-bottom:2rem;">
+            <h2 style="margin-top:0">Recent Analyst Rating Changes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Changed At</th>
+                        <th>Old Rating</th>
+                        <th>New Rating</th>
+                        <th>Price Before</th>
+                        <th>Price After</th>
+                    </tr>
+                </thead>
+                <tbody id="changesBody">
+                    <tr><td colspan="6" class="muted">Loading…</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="symbol-insights">
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 id="symbolTitle" style="margin:0">Price &amp; Rating History</h2>
+                        <p class="muted" id="chartCaption">Select a row above to load price history.</p>
+                    </div>
+                    <div id="symbolRatingBadge" class="pill" style="display:none;">Rating: —</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="historyChart"></canvas>
+                </div>
+                <div class="info-grid" id="symbolMetrics"></div>
+            </section>
+            <section class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 id="companyName" style="margin:0">Company Overview</h2>
+                        <p class="muted" id="symbolMeta">Select a row to view sector and industry insights.</p>
+                    </div>
+                </div>
+                <p class="muted company-description" id="symbolDescription">Select a row above to view company description and key figures.</p>
+                <div class="info-grid" id="symbolAttributes"></div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const statusBadge = document.getElementById('statusBadge');
+        const lastRunEl = document.getElementById('lastRun');
+        const totalSnapshotsEl = document.getElementById('totalSnapshots');
+        const totalChangesEl = document.getElementById('totalChanges');
+        const latestSnapshotEl = document.getElementById('latestSnapshot');
+        const changesBody = document.getElementById('changesBody');
+        const chartCaption = document.getElementById('chartCaption');
+        const chartCtx = document.getElementById('historyChart');
+        const symbolTitle = document.getElementById('symbolTitle');
+        const symbolRatingBadge = document.getElementById('symbolRatingBadge');
+        const companyNameEl = document.getElementById('companyName');
+        const symbolMetaEl = document.getElementById('symbolMeta');
+        const symbolDescriptionEl = document.getElementById('symbolDescription');
+        const symbolAttributesEl = document.getElementById('symbolAttributes');
+        const symbolMetricsEl = document.getElementById('symbolMetrics');
+
+        let historyChart = null;
+        let selectedSymbol = null;
+
+        const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+        const compactFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 });
+
+        function formatDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            return date.toLocaleString();
+        }
+
+        function normaliseRatingText(value) {
+            if (!value && value !== 0) return null;
+            const text = String(value).trim();
+            return text || null;
+        }
+
+        function ratingKeyFromText(value) {
+            const text = normaliseRatingText(value);
+            if (!text) return null;
+            return text.toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
+        }
+
+        function ratingBadgeClass(value) {
+            const key = ratingKeyFromText(value);
+            if (!key) return '';
+            if (key.includes('SELL')) return 'sell';
+            if (key.includes('BUY')) return 'buy';
+            return 'neutral';
+        }
+
+        function updateRatingBadge(rating) {
+            if (!rating) {
+                symbolRatingBadge.style.display = 'none';
+                symbolRatingBadge.className = 'pill';
+                symbolRatingBadge.textContent = 'Rating: —';
+                return;
+            }
+            symbolRatingBadge.style.display = 'inline-flex';
+            const badgeClass = ratingBadgeClass(rating);
+            symbolRatingBadge.className = badgeClass ? `pill ${badgeClass}` : 'pill';
+            symbolRatingBadge.textContent = `Rating: ${rating}`;
+        }
+
+        function formatSignedNumber(value) {
+            const numeric = typeof value === 'number' ? value : Number(value);
+            if (!Number.isFinite(numeric)) {
+                return null;
+            }
+            const absValue = Math.abs(numeric);
+            const formatted = numberFormatter.format(absValue);
+            if (numeric > 0) return `+${formatted}`;
+            if (numeric < 0) return `-${formatted}`;
+            return formatted;
+        }
+
+        function formatPercentValue(value) {
+            const signed = formatSignedNumber(value);
+            return signed ? `${signed}%` : null;
+        }
+
+        function formatValue(value, format) {
+            if (value === null || value === undefined || value === '') {
+                return '—';
+            }
+            if (format === 'percent') {
+                const percent = formatPercentValue(value);
+                return percent ?? '—';
+            }
+            if (format === 'compact') {
+                const numeric = typeof value === 'number' ? value : Number(value);
+                if (Number.isFinite(numeric)) {
+                    return compactFormatter.format(numeric);
+                }
+            }
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return numberFormatter.format(value);
+            }
+            return value;
+        }
+
+        function createInfoItem(label, valueText) {
+            const container = document.createElement('div');
+            container.className = 'info-item';
+            const labelEl = document.createElement('span');
+            labelEl.textContent = label;
+            const valueEl = document.createElement('strong');
+            valueEl.textContent = valueText ?? '—';
+            container.append(labelEl, valueEl);
+            return container;
+        }
+
+        function highlightActiveRow(symbol) {
+            const rows = changesBody.querySelectorAll('tr');
+            rows.forEach((row) => {
+                if (!row.dataset.symbol) {
+                    row.classList.remove('active');
+                    return;
+                }
+                row.classList.toggle('active', symbol && row.dataset.symbol === symbol);
+            });
+        }
+
+        function resetSymbolView() {
+            selectedSymbol = null;
+            if (historyChart) {
+                historyChart.destroy();
+                historyChart = null;
+            }
+            symbolTitle.textContent = 'Price & Rating History';
+            chartCaption.textContent = 'Select a row above to load price history.';
+            updateRatingBadge(null);
+            companyNameEl.textContent = 'Company Overview';
+            symbolMetaEl.textContent = 'Select a row to view sector and industry insights.';
+            symbolDescriptionEl.textContent = 'Select a row above to view company description and key figures.';
+            symbolAttributesEl.innerHTML = '';
+            symbolAttributesEl.style.display = 'block';
+            const attrMessage = document.createElement('p');
+            attrMessage.className = 'muted';
+            attrMessage.textContent = 'No symbol selected.';
+            symbolAttributesEl.appendChild(attrMessage);
+            symbolMetricsEl.innerHTML = '';
+            symbolMetricsEl.style.display = 'block';
+            const metricMessage = document.createElement('p');
+            metricMessage.className = 'muted';
+            metricMessage.textContent = 'Select a row to inspect price statistics.';
+            symbolMetricsEl.appendChild(metricMessage);
+            highlightActiveRow(null);
+        }
+
+        function setStatus(status, lastRun) {
+            statusBadge.className = `status ${status}`;
+            statusBadge.textContent = status === 'ok' ? 'Running' : 'Degraded';
+            lastRunEl.textContent = formatDate(lastRun);
+        }
+
+        async function refreshStatus() {
+            try {
+                const response = await fetch('/healthz');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                setStatus(data.status, data.state.last_run);
+                totalSnapshotsEl.textContent = data.state.total_snapshots;
+                totalChangesEl.textContent = data.state.total_rating_changes;
+                latestSnapshotEl.textContent = formatDate(data.latest_snapshot);
+            } catch (error) {
+                console.error('Failed to refresh status', error);
+            }
+        }
+
+        function renderChanges(items) {
+            if (!Array.isArray(items) || !items.length) {
+                changesBody.innerHTML = '<tr><td colspan="6" class="muted">No rating changes recorded yet.</td></tr>';
+                resetSymbolView();
+                return;
+            }
+            changesBody.innerHTML = '';
+            items.forEach((item) => {
+                const tr = document.createElement('tr');
+                tr.dataset.symbol = item.symbol;
+                if (item.symbol === selectedSymbol) {
+                    tr.classList.add('active');
+                }
+                tr.innerHTML = `
+                    <td>${item.symbol}</td>
+                    <td>${formatDate(item.changed_at)}</td>
+                    <td>${item.old_rating ?? '—'}</td>
+                    <td>${item.new_rating ?? '—'}</td>
+                    <td>${item.price_before !== null && item.price_before !== undefined ? formatValue(item.price_before, 'number') : '—'}</td>
+                    <td>${item.price_after !== null && item.price_after !== undefined ? formatValue(item.price_after, 'number') : '—'}</td>
+                `;
+                tr.addEventListener('click', () => {
+                    if (selectedSymbol !== item.symbol) {
+                        loadHistory(item.symbol);
+                    }
+                });
+                changesBody.appendChild(tr);
+            });
+            if (!selectedSymbol && items.length) {
+                loadHistory(items[0].symbol);
+            } else {
+                highlightActiveRow(selectedSymbol);
+            }
+        }
+
+        async function refreshChanges() {
+            try {
+                const response = await fetch('/api/rating_changes?limit=100');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                renderChanges(data.items ?? []);
+            } catch (error) {
+                console.error('Failed to refresh rating changes', error);
+            }
+        }
+
+        function renderSymbolMetrics(metrics, profile) {
+            symbolMetricsEl.innerHTML = '';
+            const items = [];
+            const priceMetrics = metrics?.price ?? {};
+            const ratingMetrics = metrics?.ratings ?? {};
+            const period = metrics?.period ?? {};
+
+            if (priceMetrics.change !== undefined && priceMetrics.change !== null) {
+                const changeText = formatSignedNumber(priceMetrics.change);
+                const pctText = formatPercentValue(priceMetrics.change_pct);
+                const combined = [changeText, pctText ? `(${pctText})` : null].filter(Boolean).join(' ');
+                items.push(createInfoItem('Price Change', combined || '—'));
+            }
+            if (priceMetrics.max !== undefined) {
+                items.push(createInfoItem('Period High', formatValue(priceMetrics.max, 'number')));
+            }
+            if (priceMetrics.min !== undefined) {
+                items.push(createInfoItem('Period Low', formatValue(priceMetrics.min, 'number')));
+            }
+            if (priceMetrics.average !== undefined) {
+                items.push(createInfoItem('Average Price', formatValue(priceMetrics.average, 'number')));
+            }
+            if (profile?.retrieved_at) {
+                items.push(createInfoItem('Last Updated', formatDate(profile.retrieved_at)));
+            }
+            if (period.start || period.end) {
+                items.push(createInfoItem('Period Range', `${formatDate(period.start)} → ${formatDate(period.end)}`));
+            }
+
+            const counts = ratingMetrics.counts || {};
+            if (Object.keys(counts).length) {
+                const ratingItem = document.createElement('div');
+                ratingItem.className = 'info-item';
+                const labelEl = document.createElement('span');
+                labelEl.textContent = 'Rating Distribution';
+                ratingItem.appendChild(labelEl);
+                const listEl = document.createElement('ul');
+                listEl.className = 'ratings-list';
+                Object.entries(counts)
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([rating, count]) => {
+                        const li = document.createElement('li');
+                        li.textContent = `${rating}: ${count}`;
+                        listEl.appendChild(li);
+                    });
+                ratingItem.appendChild(listEl);
+                items.push(ratingItem);
+            }
+
+            if (!items.length) {
+                symbolMetricsEl.style.display = 'block';
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = 'No price statistics available for this selection yet.';
+                symbolMetricsEl.appendChild(empty);
+            } else {
+                symbolMetricsEl.style.display = '';
+                items.forEach((item) => symbolMetricsEl.appendChild(item));
+            }
+        }
+
+        function renderSymbolDetails(symbol, data) {
+            const profile = data?.profile;
+            const metrics = data?.metrics;
+            if (!profile) {
+                resetSymbolView();
+                return;
+            }
+
+            const attributes = Array.isArray(profile.attributes) ? profile.attributes : [];
+
+            companyNameEl.textContent = profile.name ? `${profile.name} (${symbol})` : `${symbol}`;
+            const metaParts = [profile.sector, profile.industry].filter(Boolean);
+            symbolMetaEl.textContent = metaParts.length ? metaParts.join(' • ') : '—';
+            symbolDescriptionEl.textContent = profile.description || '—';
+            updateRatingBadge(data?.latest?.analyst_rating ?? null);
+
+            symbolAttributesEl.innerHTML = '';
+            if (attributes.length) {
+                symbolAttributesEl.style.display = '';
+                attributes.forEach((attribute) => {
+                    const value = formatValue(attribute.value, attribute.format);
+                    symbolAttributesEl.appendChild(createInfoItem(attribute.label, value));
+                });
+            } else {
+                symbolAttributesEl.style.display = 'block';
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = 'No additional fundamentals captured for this symbol yet.';
+                symbolAttributesEl.appendChild(empty);
+            }
+
+            renderSymbolMetrics(metrics, profile);
+        }
+
+        function renderHistoryChart(symbol, items, metrics) {
+            if (!Array.isArray(items) || !items.length) {
+                if (historyChart) {
+                    historyChart.destroy();
+                    historyChart = null;
+                }
+                symbolTitle.textContent = `${symbol} Price & Rating History`;
+                chartCaption.textContent = `No price history recorded for ${symbol} yet.`;
+                return;
+            }
+
+            const labels = items.map((item) => formatDate(item.retrieved_at));
+            const prices = items.map((item) => (item.price !== undefined ? item.price : null));
+            const ratingScores = items.map((item) => (item.rating_score !== undefined ? item.rating_score : null));
+            const ratingSeries = items.map((item) => item.analyst_rating ?? null);
+            const ratingLabels = Object.fromEntries(
+                Object.entries(metrics?.ratings?.score_labels ?? {}).map(([key, value]) => [Number(key), value])
+            );
+            const period = metrics?.period ?? {};
+            const startText = period.start ? formatDate(period.start) : null;
+            const endText = period.end ? formatDate(period.end) : null;
+            const periodText = startText && endText ? ` · ${startText} → ${endText}` : '';
+
+            symbolTitle.textContent = `${symbol} Price & Rating History`;
+            chartCaption.textContent = `Price & rating history for ${symbol}${periodText}`;
+
+            if (historyChart) {
+                historyChart.destroy();
+            }
+
+            historyChart = new Chart(chartCtx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Price',
+                            data: prices,
+                            tension: 0.3,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.25)',
+                            fill: true,
+                            pointRadius: 0,
+                            spanGaps: true,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Analyst Rating',
+                            data: ratingScores,
+                            tension: 0,
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                            fill: false,
+                            pointRadius: 3,
+                            spanGaps: true,
+                            stepped: true,
+                            yAxisID: 'y1',
+                            custom: { ratings: ratingSeries },
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(148, 163, 184, 0.12)' },
+                            title: { display: true, text: 'Price', color: '#94a3b8' },
+                        },
+                        y1: {
+                            position: 'right',
+                            ticks: {
+                                color: '#f8fafc',
+                                stepSize: 1,
+                                callback: (value) => ratingLabels[value] ?? value,
+                            },
+                            grid: { drawOnChartArea: false },
+                            min: -0.2,
+                            max: 4.2,
+                            title: { display: true, text: 'Rating', color: '#f8fafc' },
+                        },
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    if (ctx.dataset.yAxisID === 'y1') {
+                                        const rating = ctx.dataset.custom?.ratings?.[ctx.dataIndex];
+                                        return `Rating: ${rating ?? 'n/a'}`;
+                                    }
+                                    return `Price: ${formatValue(ctx.parsed.y, 'number')}`;
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        }
+
+        async function loadHistory(symbol) {
+            chartCaption.textContent = `Loading analytics for ${symbol}…`;
+            selectedSymbol = symbol;
+            highlightActiveRow(symbol);
+            try {
+                const response = await fetch(`/api/symbol/${encodeURIComponent(symbol)}/history?limit=200`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                const items = data.items ?? [];
+                renderHistoryChart(symbol, items, data.metrics ?? {});
+                renderSymbolDetails(symbol, data);
+                highlightActiveRow(symbol);
+            } catch (error) {
+                console.error(`Failed to load history for ${symbol}`, error);
+                if (historyChart) {
+                    historyChart.destroy();
+                    historyChart = null;
+                }
+                chartCaption.textContent = `Unable to load history for ${symbol}.`;
+            }
+        }
+
+        async function bootstrap() {
+            resetSymbolView();
+            await Promise.all([refreshStatus(), refreshChanges()]);
+            setInterval(refreshStatus, 60000);
+            setInterval(refreshChanges, 120000);
+        }
+
+        bootstrap();
+    </script>
+</body>
+</html>
