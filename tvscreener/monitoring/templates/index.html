@@ -58,6 +58,7 @@
         tr {
             transition: background 0.2s ease;
         }
+
         tr:hover {
             background: rgba(30, 41, 59, 0.6);
             cursor: pointer;
@@ -68,6 +69,7 @@
         tr.active:hover {
             background: rgba(56, 189, 248, 0.28);
         }
+
         .status {
             display: inline-flex;
             align-items: center;
@@ -186,6 +188,7 @@
                 grid-template-columns: 1fr;
             }
         }
+
         @media (max-width: 768px) {
             .meta {
                 flex-direction: column;
@@ -196,6 +199,7 @@
             .chart-container {
                 height: 280px;
             }
+
         }
     </style>
 </head>
@@ -469,6 +473,7 @@
                 loadHistory(items[0].symbol);
             } else {
                 highlightActiveRow(selectedSymbol);
+
             }
         }
 
@@ -713,6 +718,7 @@
         async function bootstrap() {
             resetSymbolView();
             await Promise.all([refreshStatus(), refreshChanges()]);
+
             setInterval(refreshStatus, 60000);
             setInterval(refreshChanges, 120000);
         }

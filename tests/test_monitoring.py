@@ -10,6 +10,7 @@ from tvscreener.monitoring.analytics import (
     compute_history_metrics,
     rating_to_score,
 )
+
 from tvscreener.monitoring.db import MonitoringDatabase
 from tvscreener.monitoring.models import RatingChange
 from tvscreener.monitoring.service import MonitorService
@@ -83,7 +84,6 @@ def test_process_dataframe_handles_missing_values(temp_settings: Settings, datab
         ).fetchone()
     assert row["analyst_rating"] is None
     assert row["price"] is None
-
 
 def test_fetch_latest_snapshot_includes_raw_payload(temp_settings: Settings, database: MonitoringDatabase):
     service = MonitorService(temp_settings, database)
@@ -177,3 +177,4 @@ def test_compute_history_metrics_and_profile():
     assert "Last Price" in labels
     assert "Market Cap" in labels
     assert "52 Week High" in labels
+

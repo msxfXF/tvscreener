@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from .analytics import annotate_rating_scores, build_symbol_profile, compute_history_metrics
+
 from .db import MonitoringDatabase
 from .service import MonitorService
 from .settings import Settings
