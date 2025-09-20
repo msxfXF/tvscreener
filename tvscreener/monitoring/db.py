@@ -224,5 +224,32 @@ class MonitoringDatabase:
             ).fetchone()
             return row[0] if row else None
 
+    def fetch_latest_snapshot(self, symbol: str) -> Optional[dict[str, Any]]:
+        """Return the latest snapshot for a symbol including the raw payload."""
+
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT symbol, retrieved_at, analyst_rating, price, raw_json
+                FROM snapshots
+                WHERE symbol = ?
+                ORDER BY retrieved_at DESC
+                LIMIT 1
+                """,
+                (symbol,),
+            ).fetchone()
+        if row is None:
+            return None
+        data = dict(row)
+        raw_json = data.pop("raw_json", None)
+        if raw_json:
+            try:
+                data["raw"] = json.loads(raw_json)
+            except json.JSONDecodeError:
+                data["raw"] = None
+        else:
+            data["raw"] = None
+        return data
+
 
 __all__ = ["MonitoringDatabase"]

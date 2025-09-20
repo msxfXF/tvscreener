@@ -84,7 +84,8 @@ FastAPI and can be launched directly or via Docker.
    ```
 
 3. Open `http://localhost:8000/` to view the dashboard. Recent analyst rating changes are highlighted and clicking on a
-   row reveals the corresponding price history chart.
+   row reveals an interactive price & analyst rating chart together with live company fundamentals, sector context and
+   rolling statistics for the selected symbol.
 
 Environment variables control the monitoring behaviour (defaults in parentheses):
 
@@ -103,7 +104,7 @@ Whenever a change is detected the service logs it and the dashboard updates auto
 ### REST API
 
 - `GET /api/rating_changes` – Paginated list of rating change events.
-- `GET /api/symbol/{symbol}/history` – Snapshot history and prices for a symbol.
+- `GET /api/symbol/{symbol}/history` – Snapshot history, computed metrics, and enriched profile information for a symbol.
 - `GET /healthz` – Health probe and latest run metadata.
 
 ### Docker image

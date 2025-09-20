@@ -14,6 +14,8 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from .analytics import annotate_rating_scores, build_symbol_profile, compute_history_metrics
+
 from .db import MonitoringDatabase
 from .service import MonitorService
 from .settings import Settings
@@ -121,7 +123,25 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         rows = await asyncio.to_thread(
             database.fetch_symbol_history, symbol, limit, start_iso, end_iso
         )
-        return {"symbol": symbol, "items": rows, "limit": limit}
+        annotate_rating_scores(rows)
+        latest = await asyncio.to_thread(database.fetch_latest_snapshot, symbol)
+        if latest is None:
+            raise HTTPException(status_code=404, detail="Symbol not found")
+        profile = build_symbol_profile(symbol, latest)
+        metrics = compute_history_metrics(rows)
+        latest_payload = {
+            "retrieved_at": latest.get("retrieved_at"),
+            "price": latest.get("price"),
+            "analyst_rating": latest.get("analyst_rating"),
+        }
+        return {
+            "symbol": symbol,
+            "items": rows,
+            "limit": limit,
+            "metrics": metrics,
+            "profile": profile,
+            "latest": latest_payload,
+        }
 
     @app.get("/healthz")
     async def healthz(
