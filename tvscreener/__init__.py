@@ -6,6 +6,7 @@ from .field import *
 from .filter import Filter
 from .util import *
 
+__version__ = "0.0.13"
 __all__ = [
     "Screener", "ScreenerDataFrame",
     "StockScreener", "ForexScreener", "CryptoScreener",
