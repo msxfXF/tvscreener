@@ -101,6 +101,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         }
         return templates.TemplateResponse("index.html", context)
 
+    @app.get("/api/symbols")
+    async def list_symbols(
+        database: MonitoringDatabase = Depends(get_database),
+    ) -> dict[str, Any]:
+        rows = await asyncio.to_thread(database.fetch_latest_snapshots)
+        return {"total": len(rows), "items": rows}
+
     @app.get("/api/rating_changes")
     async def rating_changes(
         limit: int = Query(50, ge=1, le=500),

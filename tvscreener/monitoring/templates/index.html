@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hans">
 <head>
     <meta charset="UTF-8">
-    <title>TVScreener Monitoring Dashboard</title>
+    <title>TVScreener 监控面板</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -206,37 +206,54 @@
 <body>
     <main>
         <header>
-            <h1>TVScreener Monitoring Dashboard</h1>
-            <p class="muted">Tracking analyst rating changes for the top {{ settings.range_end - settings.range_start }} instruments every {{ settings.interval_seconds // 60 }} minutes.</p>
+            <h1>TVScreener 监控面板</h1>
+            <p class="muted">每 {{ settings.interval_seconds // 60 }} 分钟监控前 {{ settings.range_end - settings.range_start }} 个标的的分析师评级变化。</p>
         </header>
         <section class="meta">
             <div class="card">
-                <strong>Status</strong>
-                <div id="statusBadge" class="status">Loading…</div>
-                <p class="muted">Last cycle: <span id="lastRun">—</span></p>
+                <strong>状态</strong>
+                <div id="statusBadge" class="status">加载中…</div>
+                <p class="muted">上次轮询：<span id="lastRun">—</span></p>
             </div>
             <div class="card">
-                <strong>Snapshots</strong>
-                <p class="muted"><span id="totalSnapshots">0</span> total | <span id="totalChanges">0</span> rating changes</p>
-                <p class="muted">Latest snapshot: <span id="latestSnapshot">—</span></p>
+                <strong>快照</strong>
+                <p class="muted">共 <span id="totalSnapshots">0</span> 条 | <span id="totalChanges">0</span> 次评级变动</p>
+                <p class="muted">最新快照：<span id="latestSnapshot">—</span></p>
             </div>
         </section>
 
         <section class="card" style="margin-bottom:2rem;">
-            <h2 style="margin-top:0">Recent Analyst Rating Changes</h2>
+            <h2 style="margin-top:0">监控中的股票</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Symbol</th>
-                        <th>Changed At</th>
-                        <th>Old Rating</th>
-                        <th>New Rating</th>
-                        <th>Price Before</th>
-                        <th>Price After</th>
+                        <th>股票代码</th>
+                        <th>最新价格</th>
+                        <th>分析师评级</th>
+                        <th>更新时间</th>
+                    </tr>
+                </thead>
+                <tbody id="symbolsBody">
+                    <tr><td colspan="4" class="muted">加载中…</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card" style="margin-bottom:2rem;">
+            <h2 style="margin-top:0">最新分析师评级变动</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>股票代码</th>
+                        <th>变更时间</th>
+                        <th>原评级</th>
+                        <th>新评级</th>
+                        <th>变动前价格</th>
+                        <th>变动后价格</th>
                     </tr>
                 </thead>
                 <tbody id="changesBody">
-                    <tr><td colspan="6" class="muted">Loading…</td></tr>
+                    <tr><td colspan="6" class="muted">加载中…</td></tr>
                 </tbody>
             </table>
         </section>
@@ -245,10 +262,10 @@
             <section class="card">
                 <div class="card-header">
                     <div>
-                        <h2 id="symbolTitle" style="margin:0">Price &amp; Rating History</h2>
-                        <p class="muted" id="chartCaption">Select a row above to load price history.</p>
+                        <h2 id="symbolTitle" style="margin:0">价格与评级历史</h2>
+                        <p class="muted" id="chartCaption">从上方选择股票以加载价格历史。</p>
                     </div>
-                    <div id="symbolRatingBadge" class="pill" style="display:none;">Rating: —</div>
+                    <div id="symbolRatingBadge" class="pill" style="display:none;">评级：—</div>
                 </div>
                 <div class="chart-container">
                     <canvas id="historyChart"></canvas>
@@ -258,11 +275,11 @@
             <section class="card">
                 <div class="card-header">
                     <div>
-                        <h2 id="companyName" style="margin:0">Company Overview</h2>
-                        <p class="muted" id="symbolMeta">Select a row to view sector and industry insights.</p>
+                        <h2 id="companyName" style="margin:0">公司概览</h2>
+                        <p class="muted" id="symbolMeta">选择股票以查看行业与板块信息。</p>
                     </div>
                 </div>
-                <p class="muted company-description" id="symbolDescription">Select a row above to view company description and key figures.</p>
+                <p class="muted company-description" id="symbolDescription">从上方选择股票以查看公司简介与关键指标。</p>
                 <div class="info-grid" id="symbolAttributes"></div>
             </section>
         </section>
@@ -274,6 +291,7 @@
         const totalSnapshotsEl = document.getElementById('totalSnapshots');
         const totalChangesEl = document.getElementById('totalChanges');
         const latestSnapshotEl = document.getElementById('latestSnapshot');
+        const symbolsBody = document.getElementById('symbolsBody');
         const changesBody = document.getElementById('changesBody');
         const chartCaption = document.getElementById('chartCaption');
         const chartCtx = document.getElementById('historyChart');
@@ -287,9 +305,10 @@
 
         let historyChart = null;
         let selectedSymbol = null;
+        let lastChangesCount = 0;
 
-        const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
-        const compactFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 });
+        const numberFormatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
+        const compactFormatter = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 2 });
 
         function formatDate(value) {
             if (!value) return '—';
@@ -297,7 +316,7 @@
             if (Number.isNaN(date.getTime())) {
                 return value;
             }
-            return date.toLocaleString();
+            return date.toLocaleString('zh-CN');
         }
 
         function normaliseRatingText(value) {
@@ -324,13 +343,13 @@
             if (!rating) {
                 symbolRatingBadge.style.display = 'none';
                 symbolRatingBadge.className = 'pill';
-                symbolRatingBadge.textContent = 'Rating: —';
+                symbolRatingBadge.textContent = '评级：—';
                 return;
             }
             symbolRatingBadge.style.display = 'inline-flex';
             const badgeClass = ratingBadgeClass(rating);
             symbolRatingBadge.className = badgeClass ? `pill ${badgeClass}` : 'pill';
-            symbolRatingBadge.textContent = `Rating: ${rating}`;
+            symbolRatingBadge.textContent = `评级：${rating}`;
         }
 
         function formatSignedNumber(value) {
@@ -381,14 +400,14 @@
             return container;
         }
 
-        function highlightActiveRow(symbol) {
-            const rows = changesBody.querySelectorAll('tr');
-            rows.forEach((row) => {
-                if (!row.dataset.symbol) {
+        function highlightActiveRows(symbol) {
+            document.querySelectorAll('[data-symbol-row="true"]').forEach((row) => {
+                const rowSymbol = row.dataset.symbol;
+                if (!rowSymbol) {
                     row.classList.remove('active');
                     return;
                 }
-                row.classList.toggle('active', symbol && row.dataset.symbol === symbol);
+                row.classList.toggle('active', Boolean(symbol) && rowSymbol === symbol);
             });
         }
 
@@ -398,30 +417,30 @@
                 historyChart.destroy();
                 historyChart = null;
             }
-            symbolTitle.textContent = 'Price & Rating History';
-            chartCaption.textContent = 'Select a row above to load price history.';
+            symbolTitle.textContent = '价格与评级历史';
+            chartCaption.textContent = '从上方选择股票以加载价格历史。';
             updateRatingBadge(null);
-            companyNameEl.textContent = 'Company Overview';
-            symbolMetaEl.textContent = 'Select a row to view sector and industry insights.';
-            symbolDescriptionEl.textContent = 'Select a row above to view company description and key figures.';
+            companyNameEl.textContent = '公司概览';
+            symbolMetaEl.textContent = '选择股票以查看行业与板块信息。';
+            symbolDescriptionEl.textContent = '从上方选择股票以查看公司简介与关键指标。';
             symbolAttributesEl.innerHTML = '';
             symbolAttributesEl.style.display = 'block';
             const attrMessage = document.createElement('p');
             attrMessage.className = 'muted';
-            attrMessage.textContent = 'No symbol selected.';
+            attrMessage.textContent = '未选择股票。';
             symbolAttributesEl.appendChild(attrMessage);
             symbolMetricsEl.innerHTML = '';
             symbolMetricsEl.style.display = 'block';
             const metricMessage = document.createElement('p');
             metricMessage.className = 'muted';
-            metricMessage.textContent = 'Select a row to inspect price statistics.';
+            metricMessage.textContent = '选择股票以查看价格统计。';
             symbolMetricsEl.appendChild(metricMessage);
-            highlightActiveRow(null);
+            highlightActiveRows(null);
         }
 
         function setStatus(status, lastRun) {
             statusBadge.className = `status ${status}`;
-            statusBadge.textContent = status === 'ok' ? 'Running' : 'Degraded';
+            statusBadge.textContent = status === 'ok' ? '运行中' : '异常';
             lastRunEl.textContent = formatDate(lastRun);
         }
 
@@ -442,18 +461,16 @@
         }
 
         function renderChanges(items) {
-            if (!Array.isArray(items) || !items.length) {
-                changesBody.innerHTML = '<tr><td colspan="6" class="muted">No rating changes recorded yet.</td></tr>';
-                resetSymbolView();
+            lastChangesCount = Array.isArray(items) ? items.length : 0;
+            if (!lastChangesCount) {
+                changesBody.innerHTML = '<tr><td colspan="6" class="muted">暂无评级变动记录。</td></tr>';
                 return;
             }
             changesBody.innerHTML = '';
             items.forEach((item) => {
                 const tr = document.createElement('tr');
                 tr.dataset.symbol = item.symbol;
-                if (item.symbol === selectedSymbol) {
-                    tr.classList.add('active');
-                }
+                tr.dataset.symbolRow = 'true';
                 tr.innerHTML = `
                     <td>${item.symbol}</td>
                     <td>${formatDate(item.changed_at)}</td>
@@ -472,8 +489,7 @@
             if (!selectedSymbol && items.length) {
                 loadHistory(items[0].symbol);
             } else {
-                highlightActiveRow(selectedSymbol);
-
+                highlightActiveRows(selectedSymbol);
             }
         }
 
@@ -490,6 +506,53 @@
             }
         }
 
+        function renderSymbols(items) {
+            if (!Array.isArray(items) || !items.length) {
+                symbolsBody.innerHTML = '<tr><td colspan="4" class="muted">暂无监控的股票。</td></tr>';
+                resetSymbolView();
+                return;
+            }
+            symbolsBody.innerHTML = '';
+            items.forEach((item) => {
+                const tr = document.createElement('tr');
+                tr.dataset.symbol = item.symbol;
+                tr.dataset.symbolRow = 'true';
+                tr.innerHTML = `
+                    <td>${item.symbol}</td>
+                    <td>${item.price !== null && item.price !== undefined ? formatValue(item.price, 'number') : '—'}</td>
+                    <td>${item.analyst_rating ?? '—'}</td>
+                    <td>${formatDate(item.retrieved_at)}</td>
+                `;
+                tr.addEventListener('click', () => {
+                    if (selectedSymbol !== item.symbol) {
+                        loadHistory(item.symbol);
+                    }
+                });
+                symbolsBody.appendChild(tr);
+            });
+            const hasSelected = selectedSymbol ? items.some((item) => item.symbol === selectedSymbol) : false;
+            if (lastChangesCount === 0 && items.length) {
+                if (!selectedSymbol || !hasSelected) {
+                    loadHistory(items[0].symbol);
+                    return;
+                }
+            }
+            highlightActiveRows(selectedSymbol);
+        }
+
+        async function refreshSymbols() {
+            try {
+                const response = await fetch('/api/symbols');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                renderSymbols(data.items ?? []);
+            } catch (error) {
+                console.error('Failed to refresh symbols', error);
+            }
+        }
+
         function renderSymbolMetrics(metrics, profile) {
             symbolMetricsEl.innerHTML = '';
             const items = [];
@@ -501,22 +564,22 @@
                 const changeText = formatSignedNumber(priceMetrics.change);
                 const pctText = formatPercentValue(priceMetrics.change_pct);
                 const combined = [changeText, pctText ? `(${pctText})` : null].filter(Boolean).join(' ');
-                items.push(createInfoItem('Price Change', combined || '—'));
+                items.push(createInfoItem('价格变动', combined || '—'));
             }
             if (priceMetrics.max !== undefined) {
-                items.push(createInfoItem('Period High', formatValue(priceMetrics.max, 'number')));
+                items.push(createInfoItem('区间最高价', formatValue(priceMetrics.max, 'number')));
             }
             if (priceMetrics.min !== undefined) {
-                items.push(createInfoItem('Period Low', formatValue(priceMetrics.min, 'number')));
+                items.push(createInfoItem('区间最低价', formatValue(priceMetrics.min, 'number')));
             }
             if (priceMetrics.average !== undefined) {
-                items.push(createInfoItem('Average Price', formatValue(priceMetrics.average, 'number')));
+                items.push(createInfoItem('平均价格', formatValue(priceMetrics.average, 'number')));
             }
             if (profile?.retrieved_at) {
-                items.push(createInfoItem('Last Updated', formatDate(profile.retrieved_at)));
+                items.push(createInfoItem('最近更新时间', formatDate(profile.retrieved_at)));
             }
             if (period.start || period.end) {
-                items.push(createInfoItem('Period Range', `${formatDate(period.start)} → ${formatDate(period.end)}`));
+                items.push(createInfoItem('统计区间', `${formatDate(period.start)} → ${formatDate(period.end)}`));
             }
 
             const counts = ratingMetrics.counts || {};
@@ -524,7 +587,7 @@
                 const ratingItem = document.createElement('div');
                 ratingItem.className = 'info-item';
                 const labelEl = document.createElement('span');
-                labelEl.textContent = 'Rating Distribution';
+                labelEl.textContent = '评级分布';
                 ratingItem.appendChild(labelEl);
                 const listEl = document.createElement('ul');
                 listEl.className = 'ratings-list';
@@ -543,7 +606,7 @@
                 symbolMetricsEl.style.display = 'block';
                 const empty = document.createElement('p');
                 empty.className = 'muted';
-                empty.textContent = 'No price statistics available for this selection yet.';
+                empty.textContent = '当前选择暂无价格统计数据。';
                 symbolMetricsEl.appendChild(empty);
             } else {
                 symbolMetricsEl.style.display = '';
@@ -578,7 +641,7 @@
                 symbolAttributesEl.style.display = 'block';
                 const empty = document.createElement('p');
                 empty.className = 'muted';
-                empty.textContent = 'No additional fundamentals captured for this symbol yet.';
+                empty.textContent = '当前股票暂无更多基本面数据。';
                 symbolAttributesEl.appendChild(empty);
             }
 
@@ -591,8 +654,8 @@
                     historyChart.destroy();
                     historyChart = null;
                 }
-                symbolTitle.textContent = `${symbol} Price & Rating History`;
-                chartCaption.textContent = `No price history recorded for ${symbol} yet.`;
+                symbolTitle.textContent = `${symbol} 价格与评级历史`;
+                chartCaption.textContent = `尚未记录 ${symbol} 的价格历史。`;
                 return;
             }
 
@@ -608,8 +671,8 @@
             const endText = period.end ? formatDate(period.end) : null;
             const periodText = startText && endText ? ` · ${startText} → ${endText}` : '';
 
-            symbolTitle.textContent = `${symbol} Price & Rating History`;
-            chartCaption.textContent = `Price & rating history for ${symbol}${periodText}`;
+            symbolTitle.textContent = `${symbol} 价格与评级历史`;
+            chartCaption.textContent = `${symbol} 的价格与评级历史${periodText}`;
 
             if (historyChart) {
                 historyChart.destroy();
@@ -621,7 +684,7 @@
                     labels,
                     datasets: [
                         {
-                            label: 'Price',
+                            label: '价格',
                             data: prices,
                             tension: 0.3,
                             borderColor: '#38bdf8',
@@ -632,7 +695,7 @@
                             yAxisID: 'y',
                         },
                         {
-                            label: 'Analyst Rating',
+                            label: '分析师评级',
                             data: ratingScores,
                             tension: 0,
                             borderColor: '#f97316',
@@ -658,7 +721,7 @@
                         y: {
                             ticks: { color: '#94a3b8' },
                             grid: { color: 'rgba(148, 163, 184, 0.12)' },
-                            title: { display: true, text: 'Price', color: '#94a3b8' },
+                            title: { display: true, text: '价格', color: '#94a3b8' },
                         },
                         y1: {
                             position: 'right',
@@ -670,7 +733,7 @@
                             grid: { drawOnChartArea: false },
                             min: -0.2,
                             max: 4.2,
-                            title: { display: true, text: 'Rating', color: '#f8fafc' },
+                            title: { display: true, text: '评级', color: '#f8fafc' },
                         },
                     },
                     plugins: {
@@ -680,9 +743,9 @@
                                 label: (ctx) => {
                                     if (ctx.dataset.yAxisID === 'y1') {
                                         const rating = ctx.dataset.custom?.ratings?.[ctx.dataIndex];
-                                        return `Rating: ${rating ?? 'n/a'}`;
+                                        return `评级：${rating ?? 'n/a'}`;
                                     }
-                                    return `Price: ${formatValue(ctx.parsed.y, 'number')}`;
+                                    return `价格：${formatValue(ctx.parsed.y, 'number')}`;
                                 },
                             },
                         },
@@ -692,9 +755,9 @@
         }
 
         async function loadHistory(symbol) {
-            chartCaption.textContent = `Loading analytics for ${symbol}…`;
+            chartCaption.textContent = `正在加载 ${symbol} 的数据…`;
             selectedSymbol = symbol;
-            highlightActiveRow(symbol);
+            highlightActiveRows(symbol);
             try {
                 const response = await fetch(`/api/symbol/${encodeURIComponent(symbol)}/history?limit=200`);
                 if (!response.ok) {
@@ -704,23 +767,24 @@
                 const items = data.items ?? [];
                 renderHistoryChart(symbol, items, data.metrics ?? {});
                 renderSymbolDetails(symbol, data);
-                highlightActiveRow(symbol);
+                highlightActiveRows(symbol);
             } catch (error) {
                 console.error(`Failed to load history for ${symbol}`, error);
                 if (historyChart) {
                     historyChart.destroy();
                     historyChart = null;
                 }
-                chartCaption.textContent = `Unable to load history for ${symbol}.`;
+                chartCaption.textContent = `无法加载 ${symbol} 的历史数据。`;
             }
         }
 
         async function bootstrap() {
             resetSymbolView();
-            await Promise.all([refreshStatus(), refreshChanges()]);
+            await Promise.all([refreshStatus(), refreshChanges(), refreshSymbols()]);
 
             setInterval(refreshStatus, 60000);
             setInterval(refreshChanges, 120000);
+            setInterval(refreshSymbols, 120000);
         }
 
         bootstrap();
