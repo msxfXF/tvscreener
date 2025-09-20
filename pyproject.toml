@@ -20,6 +20,7 @@ dependencies = [
     "fastapi>=0.110.0",
     "uvicorn[standard]",
     "pydantic-settings>=2.0",
+    "pydantic>=2.0",
     "python-dotenv"
 ]
 urls = {"Homepage" = "https://github.com/houseofai/tvscreener"}
