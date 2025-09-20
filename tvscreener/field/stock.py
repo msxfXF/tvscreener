@@ -291,3 +291,6 @@ class StockField(Field):
     YEAR_BETA_1 = '1-Year Beta', 'beta_1_year', 'round', False, False
     YTD_PERFORMANCE = 'YTD Performance', 'Perf.YTD', 'percent', False, False
     Y_PERFORMANCE_5 = '5Y Performance', 'Perf.5Y', 'percent', False, False
+   
+    # 添加新的列
+    ANALYST_RATING = 'AnalystRating', 'AnalystRating', 'text', False, False
