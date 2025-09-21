@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-w6VYj1WFJsbgx5caX5/C/PObbIVdQydb9h9NP7VDaRao7IhiHBpjz2uVH54camz1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     <style>
         :root {
             color-scheme: light dark;
@@ -48,6 +48,64 @@
             padding: 0.75rem 1rem;
             text-align: left;
             border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .symbol-table-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .symbol-filter {
+            position: relative;
+            flex: 1 1 220px;
+            max-width: 360px;
+        }
+
+        .symbol-filter input {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(15, 23, 42, 0.65);
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .symbol-filter input::placeholder {
+            color: #64748b;
+        }
+
+        .symbol-table-wrapper {
+            max-height: 360px;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .symbol-table-wrapper table {
+            margin: 0;
+        }
+
+        .symbol-table-wrapper thead {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(6px);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
         }
         th {
             font-weight: 600;
@@ -223,20 +281,28 @@
         </section>
 
         <section class="card" style="margin-bottom:2rem;">
-            <h2 style="margin-top:0">监控中的股票</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>股票代码</th>
-                        <th>最新价格</th>
-                        <th>分析师评级</th>
-                        <th>更新时间</th>
-                    </tr>
-                </thead>
-                <tbody id="symbolsBody">
-                    <tr><td colspan="4" class="muted">加载中…</td></tr>
-                </tbody>
-            </table>
+            <div class="symbol-table-controls">
+                <h2 style="margin:0">监控中的股票</h2>
+                <label class="symbol-filter" for="symbolFilterInput">
+                    <span class="sr-only">筛选股票</span>
+                    <input id="symbolFilterInput" type="search" placeholder="筛选股票（支持代码与评级）" autocomplete="off">
+                </label>
+            </div>
+            <div class="symbol-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>股票代码</th>
+                            <th>最新价格</th>
+                            <th>分析师评级</th>
+                            <th>更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="symbolsBody">
+                        <tr><td colspan="4" class="muted">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <section class="card" style="margin-bottom:2rem;">
@@ -292,6 +358,7 @@
         const totalChangesEl = document.getElementById('totalChanges');
         const latestSnapshotEl = document.getElementById('latestSnapshot');
         const symbolsBody = document.getElementById('symbolsBody');
+        const symbolFilterInput = document.getElementById('symbolFilterInput');
         const changesBody = document.getElementById('changesBody');
         const chartCaption = document.getElementById('chartCaption');
         const chartCtx = document.getElementById('historyChart');
@@ -306,6 +373,8 @@
         let historyChart = null;
         let selectedSymbol = null;
         let lastChangesCount = 0;
+        let symbolsCache = [];
+        let symbolFilterText = '';
 
         const numberFormatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
         const compactFormatter = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 2 });
@@ -387,6 +456,24 @@
                 return numberFormatter.format(value);
             }
             return value;
+        }
+
+        function filterSymbols(items, text) {
+            if (!Array.isArray(items)) {
+                return [];
+            }
+            if (!text) {
+                return items;
+            }
+            const query = text.trim().toLowerCase();
+            if (!query) {
+                return items;
+            }
+            return items.filter((item) => {
+                const symbolText = String(item.symbol ?? '').toLowerCase();
+                const ratingText = String(item.analyst_rating ?? '').toLowerCase();
+                return symbolText.includes(query) || ratingText.includes(query);
+            });
         }
 
         function createInfoItem(label, valueText) {
@@ -505,15 +592,24 @@
                 console.error('Failed to refresh rating changes', error);
             }
         }
+        function updateSymbolsTable(autoSelect = false) {
+            const hasAnySymbols = symbolsCache.length > 0;
+            const hasFilter = Boolean(symbolFilterText && symbolFilterText.trim());
+            const filteredItems = filterSymbols(symbolsCache, symbolFilterText);
 
-        function renderSymbols(items) {
-            if (!Array.isArray(items) || !items.length) {
-                symbolsBody.innerHTML = '<tr><td colspan="4" class="muted">暂无监控的股票。</td></tr>';
-                resetSymbolView();
+            if (!filteredItems.length) {
+                const message = hasFilter && hasAnySymbols ? '没有匹配的股票。' : '暂无监控的股票。';
+                symbolsBody.innerHTML = `<tr><td colspan="4" class="muted">${message}</td></tr>`;
+                if (!hasFilter || !hasAnySymbols) {
+                    resetSymbolView();
+                } else {
+                    highlightActiveRows(null);
+                }
                 return;
             }
+
             symbolsBody.innerHTML = '';
-            items.forEach((item) => {
+            filteredItems.forEach((item) => {
                 const tr = document.createElement('tr');
                 tr.dataset.symbol = item.symbol;
                 tr.dataset.symbolRow = 'true';
@@ -530,15 +626,42 @@
                 });
                 symbolsBody.appendChild(tr);
             });
-            const hasSelected = selectedSymbol ? items.some((item) => item.symbol === selectedSymbol) : false;
-            if (lastChangesCount === 0 && items.length) {
+            const hasSelected = selectedSymbol
+                ? filteredItems.some((item) => item.symbol === selectedSymbol)
+                : false;
+
+            if (autoSelect && filteredItems.length) {
                 if (!selectedSymbol || !hasSelected) {
-                    loadHistory(items[0].symbol);
+                    loadHistory(filteredItems[0].symbol);
                     return;
                 }
             }
+
             highlightActiveRows(selectedSymbol);
         }
+
+        function renderSymbols(items) {
+            symbolsCache = Array.isArray(items) ? items : [];
+            if (!symbolsCache.length) {
+                symbolsBody.innerHTML = '<tr><td colspan="4" class="muted">暂无监控的股票。</td></tr>';
+                resetSymbolView();
+                return;
+            }
+
+            const shouldAutoSelect = lastChangesCount === 0;
+            updateSymbolsTable(shouldAutoSelect);
+        }
+
+        if (symbolFilterInput) {
+            const handleFilterChange = () => {
+                symbolFilterText = symbolFilterInput.value;
+                updateSymbolsTable(false);
+            };
+
+            symbolFilterInput.addEventListener('input', handleFilterChange);
+            symbolFilterInput.addEventListener('search', handleFilterChange);
+        }
+
 
         async function refreshSymbols() {
             try {
