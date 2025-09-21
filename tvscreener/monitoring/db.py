@@ -251,5 +251,25 @@ class MonitoringDatabase:
             data["raw"] = None
         return data
 
+    def fetch_latest_snapshots(self) -> List[dict[str, Any]]:
+        """Return the most recent snapshot for every tracked symbol."""
+
+        with self.connect() as conn:
+            cursor = conn.execute(
+                """
+                SELECT s.symbol, s.retrieved_at, s.analyst_rating, s.price
+                FROM snapshots AS s
+                INNER JOIN (
+                    SELECT symbol, MAX(retrieved_at) AS max_retrieved
+                    FROM snapshots
+                    GROUP BY symbol
+                ) AS latest
+                ON latest.symbol = s.symbol AND latest.max_retrieved = s.retrieved_at
+                ORDER BY s.symbol
+                """
+            )
+            rows = [dict(row) for row in cursor.fetchall()]
+        return rows
+
 
 __all__ = ["MonitoringDatabase"]
