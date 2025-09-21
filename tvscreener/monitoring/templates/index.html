@@ -592,7 +592,6 @@
                 console.error('Failed to refresh rating changes', error);
             }
         }
-
         function updateSymbolsTable(autoSelect = false) {
             const hasAnySymbols = symbolsCache.length > 0;
             const hasFilter = Boolean(symbolFilterText && symbolFilterText.trim());
@@ -627,7 +626,6 @@
                 });
                 symbolsBody.appendChild(tr);
             });
-
             const hasSelected = selectedSymbol
                 ? filteredItems.some((item) => item.symbol === selectedSymbol)
                 : false;
@@ -663,6 +661,7 @@
             symbolFilterInput.addEventListener('input', handleFilterChange);
             symbolFilterInput.addEventListener('search', handleFilterChange);
         }
+
 
         async function refreshSymbols() {
             try {
