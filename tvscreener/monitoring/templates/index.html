@@ -1,428 +1,1275 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hans">
 <head>
     <meta charset="UTF-8">
-    <title>TVScreener Monitoring Dashboard</title>
+    <title>TVScreener 简易面板</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-w6VYj1WFJsbgx5caX5/C/PObbIVdQydb9h9NP7VDaRao7IhiHBpjz2uVH54camz1" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
     <style>
-        :root {
-            color-scheme: light dark;
-        }
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             margin: 0;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: #f8fafc;
+            color: #0f172a;
         }
+
         main {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 2rem 1rem 4rem;
+            padding: 2rem 1rem 3rem;
         }
+
+        header {
+            margin-bottom: 1.5rem;
+        }
+
         h1 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
+            font-size: 1.9rem;
+            margin: 0;
         }
-        .meta {
+
+        .muted {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .cards {
             display: flex;
             flex-wrap: wrap;
             gap: 1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
+
+        .card,
+        .panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+        }
+
         .card {
-            background: rgba(15, 23, 42, 0.65);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.45);
-            backdrop-filter: blur(16px);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-        }
-        th {
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-        }
-        tr {
-            transition: background 0.2s ease;
+            flex: 1 1 230px;
+            padding: 1rem 1.2rem;
+            min-width: 220px;
         }
 
-        tr:hover {
-            background: rgba(30, 41, 59, 0.6);
-            cursor: pointer;
-        }
-        tr.active {
-            background: rgba(56, 189, 248, 0.18);
-        }
-        tr.active:hover {
-            background: rgba(56, 189, 248, 0.28);
+        .card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1rem;
         }
 
-        .status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 999px;
-            font-weight: 600;
+        .panel {
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
         }
-        .status.ok {
-            background: rgba(34, 197, 94, 0.15);
-            color: #4ade80;
-        }
-        .status.degraded {
-            background: rgba(249, 115, 22, 0.15);
-            color: #fb923c;
-        }
-        .chart-container {
-            position: relative;
-            height: 360px;
-        }
-        .muted {
-            color: #94a3b8;
-        }
-        .card-header {
+
+        .section-header {
             display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .pill {
-            display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
-            padding: 0.35rem 0.9rem;
-            border-radius: 999px;
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: #e2e8f0;
-            background: rgba(148, 163, 184, 0.12);
-            white-space: nowrap;
-        }
-        .pill.buy {
-            background: rgba(34, 197, 94, 0.18);
-            color: #4ade80;
-            border-color: rgba(74, 222, 128, 0.4);
-        }
-        .pill.sell {
-            background: rgba(248, 113, 113, 0.18);
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.4);
-        }
-        .pill.neutral {
-            background: rgba(14, 165, 233, 0.18);
-            color: #38bdf8;
-            border-color: rgba(56, 189, 248, 0.35);
-        }
-        .symbol-insights {
-            display: grid;
-            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-            gap: 1.5rem;
-            margin-top: 2rem;
-            align-items: stretch;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
-            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
         }
-        .info-item {
-            background: rgba(30, 41, 59, 0.6);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            border-radius: 12px;
-            padding: 0.85rem;
-            min-height: 88px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.15rem;
         }
-        .info-item span {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #94a3b8;
-        }
-        .info-item strong {
-            margin-top: 0.5rem;
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: #e2e8f0;
-            word-break: break-word;
-        }
-        .ratings-list {
-            list-style: none;
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
             padding: 0;
-            margin: 0.75rem 0 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        .symbol-filter input {
+            width: 240px;
+            max-width: 100%;
+            padding: 0.45rem 0.6rem;
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .symbol-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .chip-group {
             display: flex;
             flex-wrap: wrap;
             gap: 0.5rem;
         }
-        .ratings-list li {
-            background: rgba(148, 163, 184, 0.14);
+
+        .filter-chip {
+            border: 1px solid #cbd5f5;
+            background: #ffffff;
+            color: #1e293b;
             border-radius: 999px;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.75rem;
-            color: #cbd5f5;
+            padding: 0.25rem 0.8rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
         }
-        .company-description {
-            margin-top: 0.5rem;
+
+        .filter-chip:hover,
+        .filter-chip:focus-visible {
+            background: #e0f2fe;
+            border-color: #38bdf8;
+            outline: none;
+        }
+
+        .filter-chip[data-active="true"] {
+            background: #38bdf8;
+            border-color: #0ea5e9;
+            color: #0f172a;
+        }
+
+        .range-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        .range-filter input {
+            width: 90px;
+            padding: 0.3rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid #cbd5f5;
+            font-size: 0.85rem;
+        }
+
+        .range-filter button {
+            background: none;
+            border: none;
+            color: #0ea5e9;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.4rem;
+        }
+
+        .range-filter button:disabled {
+            color: #94a3b8;
+            cursor: default;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 0.55rem 0.6rem;
+            text-align: left;
+        }
+
+        th {
+            border-bottom: 1px solid #e2e8f0;
+            color: #475569;
+            font-size: 0.85rem;
+            letter-spacing: 0.02em;
+            font-weight: 600;
+        }
+
+        td {
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .sort-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: none;
+            border: none;
+            font: inherit;
+            color: inherit;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .sort-button:focus-visible {
+            outline: 2px solid #38bdf8;
+            outline-offset: 2px;
+        }
+
+        .sort-indicator {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .sort-button[data-active="true"] .sort-indicator {
+            color: #0f172a;
+        }
+
+        tr:hover {
+            background: #f0f9ff;
+            cursor: pointer;
+        }
+
+        tr.active {
+            background: #e0f2fe;
+        }
+
+        .symbol-list {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+
+        .symbol-list table {
+            margin: 0;
+        }
+
+        .status-label {
+            font-weight: 600;
+        }
+
+        .status-ok {
+            color: #15803d;
+        }
+
+        .status-degraded {
+            color: #b91c1c;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 320px;
+        }
+
+        .chart-wrapper canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .timeframe-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .timeframe-button {
+            border: 1px solid #cbd5f5;
+            background: #ffffff;
+            border-radius: 999px;
+            padding: 0.25rem 0.8rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .timeframe-button:hover,
+        .timeframe-button:focus-visible {
+            background: #e0f2fe;
+            border-color: #38bdf8;
+            outline: none;
+        }
+
+        .timeframe-button[data-active="true"] {
+            background: #0ea5e9;
+            border-color: #0284c7;
+            color: #f8fafc;
+        }
+
+        .chart-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        .chart-toggle input {
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: #0ea5e9;
+        }
+
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0;
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .info-list li {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.7rem 0.8rem;
+        }
+
+        .info-list span {
+            display: block;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.04em;
+        }
+
+        .info-list strong {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .info-period {
+            margin-top: 0.75rem;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .metrics-grid {
+            margin-top: 1rem;
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .metric-card {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 0.65rem 0.8rem;
+        }
+
+        .metric-card span {
+            display: block;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.04em;
+        }
+
+        .metric-card strong {
+            display: block;
+            font-size: 1.05rem;
+            color: #0f172a;
+        }
+
+        .metric-card small {
+            display: block;
+            font-size: 0.8rem;
+            color: #0f172a;
+        }
+
+        .metric-card small.muted {
+            color: #94a3b8;
+        }
+
+        .rating-summary {
+            margin-top: 1.2rem;
+        }
+
+        .rating-summary h3 {
+            margin: 0 0 0.6rem;
+            font-size: 1rem;
+        }
+
+        .rating-stats-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .rating-stats-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .rating-stats-list li.muted {
+            justify-content: center;
+            color: #94a3b8;
+        }
+
+        .rating-stats-list .count {
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .attribute-section {
+            margin-top: 1.2rem;
+        }
+
+        .attribute-section h3 {
+            margin: 0 0 0.6rem;
+            font-size: 1rem;
+        }
+
+        .attribute-grid {
+            display: grid;
+            gap: 0.6rem;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .attribute-grid div {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .attribute-grid span {
+            display: block;
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+        }
+
+        .attribute-grid strong {
+            font-size: 0.95rem;
+            color: #0f172a;
+        }
+
+        .attribute-grid p {
+            margin: 0;
+            grid-column: 1 / -1;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .info-description {
+            margin-top: 1rem;
+            color: #475569;
             line-height: 1.6;
         }
-        @media (max-width: 1100px) {
-            .symbol-insights {
-                grid-template-columns: 1fr;
-            }
-        }
 
-        @media (max-width: 768px) {
-            .meta {
+        @media (max-width: 720px) {
+            main {
+                padding: 1.5rem 1rem 3rem;
+            }
+
+            .cards {
                 flex-direction: column;
             }
-            th, td {
-                padding: 0.5rem 0.75rem;
-            }
-            .chart-container {
-                height: 280px;
+
+            tr:hover {
+                background: inherit;
+                cursor: default;
             }
 
+            .chart-toolbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
     <main>
         <header>
-            <h1>TVScreener Monitoring Dashboard</h1>
-            <p class="muted">Tracking analyst rating changes for the top {{ settings.range_end - settings.range_start }} instruments every {{ settings.interval_seconds // 60 }} minutes.</p>
+            <h1>TVScreener 简易监控面板</h1>
+            <p class="muted">系统每 {{ settings.interval_seconds // 60 }} 分钟轮询 {{ settings.range_end - settings.range_start }} 只股票，展示最近价格与评级情况。</p>
         </header>
-        <section class="meta">
+
+        <section class="cards">
             <div class="card">
-                <strong>Status</strong>
-                <div id="statusBadge" class="status">Loading…</div>
-                <p class="muted">Last cycle: <span id="lastRun">—</span></p>
+                <h3>运行状态</h3>
+                <p id="statusText" class="status-label muted">加载中…</p>
+                <p class="muted">上次轮询：<span id="lastRun">—</span></p>
             </div>
             <div class="card">
-                <strong>Snapshots</strong>
-                <p class="muted"><span id="totalSnapshots">0</span> total | <span id="totalChanges">0</span> rating changes</p>
-                <p class="muted">Latest snapshot: <span id="latestSnapshot">—</span></p>
+                <h3>数据统计</h3>
+                <p>快照总数：<span id="totalSnapshots">0</span></p>
+                <p>评级变动：<span id="totalChanges">0</span></p>
+                <p class="muted">最新快照：<span id="latestSnapshot">—</span></p>
             </div>
         </section>
 
-        <section class="card" style="margin-bottom:2rem;">
-            <h2 style="margin-top:0">Recent Analyst Rating Changes</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Changed At</th>
-                        <th>Old Rating</th>
-                        <th>New Rating</th>
-                        <th>Price Before</th>
-                        <th>Price After</th>
-                    </tr>
-                </thead>
-                <tbody id="changesBody">
-                    <tr><td colspan="6" class="muted">Loading…</td></tr>
-                </tbody>
-            </table>
+        <section class="panel">
+            <div class="section-header">
+                <h2>监控中的股票</h2>
+                <label class="symbol-filter" for="symbolFilter">
+                    <span class="sr-only">筛选股票</span>
+                    <input id="symbolFilter" type="search" placeholder="按代码或评级筛选">
+                </label>
+            </div>
+            <div class="symbol-controls">
+                <div class="chip-group" role="group" aria-label="按评级筛选">
+                    <button type="button" class="filter-chip" data-rating-filter="all" data-active="true">全部</button>
+                    <button type="button" class="filter-chip" data-rating-filter="bullish">看多</button>
+                    <button type="button" class="filter-chip" data-rating-filter="neutral">持平</button>
+                    <button type="button" class="filter-chip" data-rating-filter="bearish">看空</button>
+                </div>
+                <div class="range-filter">
+                    <span>价格区间</span>
+                    <label class="sr-only" for="priceMin">最低价格</label>
+                    <input id="priceMin" type="number" inputmode="decimal" placeholder="最低">
+                    <span>至</span>
+                    <label class="sr-only" for="priceMax">最高价格</label>
+                    <input id="priceMax" type="number" inputmode="decimal" placeholder="最高">
+                    <button type="button" id="priceFilterReset" disabled>重置</button>
+                </div>
+            </div>
+            <div class="symbol-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>
+                                <button class="sort-button" type="button" data-sort-key="symbol">
+                                    股票代码 <span class="sort-indicator" data-sort-indicator="symbol">—</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button class="sort-button" type="button" data-sort-key="price">
+                                    最新价格 <span class="sort-indicator" data-sort-indicator="price">—</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button class="sort-button" type="button" data-sort-key="analyst_rating">
+                                    评级 <span class="sort-indicator" data-sort-indicator="analyst_rating">—</span>
+                                </button>
+                            </th>
+                            <th>
+                                <button class="sort-button" type="button" data-sort-key="retrieved_at">
+                                    更新时间 <span class="sort-indicator" data-sort-indicator="retrieved_at">—</span>
+                                </button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="symbolsBody">
+                        <tr><td colspan="4" class="muted">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <section class="symbol-insights">
-            <section class="card">
-                <div class="card-header">
-                    <div>
-                        <h2 id="symbolTitle" style="margin:0">Price &amp; Rating History</h2>
-                        <p class="muted" id="chartCaption">Select a row above to load price history.</p>
-                    </div>
-                    <div id="symbolRatingBadge" class="pill" style="display:none;">Rating: —</div>
+        <section class="panel">
+            <h2 style="margin-top:0">最新评级变动</h2>
+            <div class="symbol-list" style="max-height:240px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>股票代码</th>
+                            <th>时间</th>
+                            <th>原评级</th>
+                            <th>新评级</th>
+                            <th>变动前价格</th>
+                            <th>变动后价格</th>
+                        </tr>
+                    </thead>
+                    <tbody id="changesBody">
+                        <tr><td colspan="6" class="muted">加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2 style="margin-top:0">价格走势</h2>
+            <div class="chart-toolbar">
+                <div class="timeframe-group" role="group" aria-label="选择时间区间">
+                    <button type="button" class="timeframe-button" data-timeframe="5D">5日</button>
+                    <button type="button" class="timeframe-button" data-timeframe="1M">1月</button>
+                    <button type="button" class="timeframe-button" data-timeframe="3M" data-active="true">3月</button>
+                    <button type="button" class="timeframe-button" data-timeframe="1Y">1年</button>
+                    <button type="button" class="timeframe-button" data-timeframe="ALL">全部</button>
                 </div>
-                <div class="chart-container">
-                    <canvas id="historyChart"></canvas>
+                <label class="chart-toggle" for="toggleSma">
+                    <input id="toggleSma" type="checkbox">
+                    平滑走势
+                </label>
+            </div>
+            <p id="chartMessage" class="muted">请选择上方股票查看价格历史。</p>
+            <div class="chart-wrapper">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2 style="margin-top:0">股票详情</h2>
+            <ul class="info-list">
+                <li><span>股票</span><strong id="infoSymbol">—</strong></li>
+                <li><span>最新价格</span><strong id="infoPrice">—</strong></li>
+                <li><span>最新评级</span><strong id="infoRating">—</strong></li>
+                <li><span>最近更新时间</span><strong id="infoUpdated">—</strong></li>
+                <li><span>行业 / 板块</span><strong id="infoMeta">—</strong></li>
+            </ul>
+            <p id="infoPeriod" class="info-period">暂无数据区间。</p>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span>区间涨跌</span>
+                    <strong id="metricChange">—</strong>
+                    <small id="metricChangePct" class="muted">—</small>
                 </div>
-                <div class="info-grid" id="symbolMetrics"></div>
-            </section>
-            <section class="card">
-                <div class="card-header">
-                    <div>
-                        <h2 id="companyName" style="margin:0">Company Overview</h2>
-                        <p class="muted" id="symbolMeta">Select a row to view sector and industry insights.</p>
-                    </div>
+                <div class="metric-card">
+                    <span>区间最高</span>
+                    <strong id="metricHigh">—</strong>
                 </div>
-                <p class="muted company-description" id="symbolDescription">Select a row above to view company description and key figures.</p>
-                <div class="info-grid" id="symbolAttributes"></div>
-            </section>
+                <div class="metric-card">
+                    <span>区间最低</span>
+                    <strong id="metricLow">—</strong>
+                </div>
+                <div class="metric-card">
+                    <span>平均价格</span>
+                    <strong id="metricAverage">—</strong>
+                </div>
+            </div>
+            <div class="rating-summary">
+                <h3>评级统计</h3>
+                <ul id="ratingStats" class="rating-stats-list">
+                    <li class="muted">暂无评级记录。</li>
+                </ul>
+            </div>
+            <div class="attribute-section">
+                <h3>关键指标</h3>
+                <div id="attributeList" class="attribute-grid">
+                    <p>暂无关键指标。</p>
+                </div>
+            </div>
+            <p id="infoDescription" class="info-description">暂无简介。</p>
         </section>
     </main>
 
     <script>
-        const statusBadge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
         const lastRunEl = document.getElementById('lastRun');
         const totalSnapshotsEl = document.getElementById('totalSnapshots');
         const totalChangesEl = document.getElementById('totalChanges');
         const latestSnapshotEl = document.getElementById('latestSnapshot');
+        const symbolsBody = document.getElementById('symbolsBody');
         const changesBody = document.getElementById('changesBody');
-        const chartCaption = document.getElementById('chartCaption');
-        const chartCtx = document.getElementById('historyChart');
-        const symbolTitle = document.getElementById('symbolTitle');
-        const symbolRatingBadge = document.getElementById('symbolRatingBadge');
-        const companyNameEl = document.getElementById('companyName');
-        const symbolMetaEl = document.getElementById('symbolMeta');
-        const symbolDescriptionEl = document.getElementById('symbolDescription');
-        const symbolAttributesEl = document.getElementById('symbolAttributes');
-        const symbolMetricsEl = document.getElementById('symbolMetrics');
+        const symbolFilterInput = document.getElementById('symbolFilter');
+        const chartMessage = document.getElementById('chartMessage');
+        const chartCanvas = document.getElementById('historyChart');
+        const infoSymbol = document.getElementById('infoSymbol');
+        const infoPrice = document.getElementById('infoPrice');
+        const infoRating = document.getElementById('infoRating');
+        const infoUpdated = document.getElementById('infoUpdated');
+        const infoMeta = document.getElementById('infoMeta');
+        const infoDescription = document.getElementById('infoDescription');
+        const infoPeriod = document.getElementById('infoPeriod');
+        const metricChange = document.getElementById('metricChange');
+        const metricChangePct = document.getElementById('metricChangePct');
+        const metricHigh = document.getElementById('metricHigh');
+        const metricLow = document.getElementById('metricLow');
+        const metricAverage = document.getElementById('metricAverage');
+        const ratingStatsList = document.getElementById('ratingStats');
+        const attributeList = document.getElementById('attributeList');
+        const sortButtons = document.querySelectorAll('.sort-button');
+        const sortIndicators = {};
+        document.querySelectorAll('[data-sort-indicator]').forEach((el) => {
+            sortIndicators[el.dataset.sortIndicator] = el;
+        });
+        const ratingFilterButtons = document.querySelectorAll('[data-rating-filter]');
+        const priceMinInput = document.getElementById('priceMin');
+        const priceMaxInput = document.getElementById('priceMax');
+        const priceResetButton = document.getElementById('priceFilterReset');
+        const timeframeButtons = document.querySelectorAll('[data-timeframe]');
+        const smaToggle = document.getElementById('toggleSma');
 
-        let historyChart = null;
+        let allSymbols = [];
+        let filterText = '';
         let selectedSymbol = null;
+        let historyChart = null;
+        let sortState = { key: 'symbol', direction: 'asc' };
+        let ratingFilter = 'all';
+        let priceRange = { min: null, max: null };
+        let availablePriceRange = { min: null, max: null };
+        const historyDataCache = new Map();
+        let currentTimeframe = '3M';
+        let showSma = false;
 
-        const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
-        const compactFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 2 });
+        const numberFormatter = new Intl.NumberFormat('zh-CN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        });
+        const percentFormatter = new Intl.NumberFormat('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        const ratioFormatter = new Intl.NumberFormat('zh-CN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 1,
+        });
+        const compactFormatter = new Intl.NumberFormat('zh-CN', {
+            notation: 'compact',
+            maximumFractionDigits: 2,
+        });
+
+        const ratingTranslationMap = {
+            STRONGBUY: '强烈买入',
+            CONVICTIONBUY: '坚定买入',
+            BUY: '买入',
+            OUTPERFORM: '跑赢大盘',
+            OVERWEIGHT: '增持',
+            ADD: '增持',
+            ACCUMULATE: '增持',
+            HOLD: '持有',
+            NEUTRAL: '中性',
+            EQUALWEIGHT: '与大盘一致',
+            MARKETPERFORM: '市场表现',
+            PERFORM: '市场表现',
+            SELL: '卖出',
+            UNDERPERFORM: '跑输大盘',
+            REDUCE: '减持',
+            UNDERWEIGHT: '减持',
+            STRONGSELL: '强烈卖出',
+        };
+
+        const attributeLabelMap = {
+            'Last Price': '最新价格',
+            'Change (Daily)': '日内涨跌幅',
+            Volume: '成交量',
+            'Average Volume (30d)': '30日均量',
+            'Average Volume (10d)': '10日均量',
+            'Market Cap': '市值',
+            '52 Week High': '52周最高',
+            '52 Week Low': '52周最低',
+        };
+
+        const timeframeDurations = {
+            '5D': 5 * 24 * 60 * 60 * 1000,
+            '1M': 30 * 24 * 60 * 60 * 1000,
+            '3M': 90 * 24 * 60 * 60 * 1000,
+            '1Y': 365 * 24 * 60 * 60 * 1000,
+            ALL: null,
+        };
+
+        const smaPeriod = 5;
+
+        function formatNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return '—';
+            }
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return '—';
+            }
+            return numberFormatter.format(numeric);
+        }
 
         function formatDate(value) {
-            if (!value) return '—';
+            if (!value) {
+                return '—';
+            }
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) {
                 return value;
             }
-            return date.toLocaleString();
+            return date.toLocaleString('zh-CN');
         }
 
         function normaliseRatingText(value) {
-            if (!value && value !== 0) return null;
+            if (value === null || value === undefined) {
+                return null;
+            }
             const text = String(value).trim();
-            return text || null;
-        }
-
-        function ratingKeyFromText(value) {
-            const text = normaliseRatingText(value);
-            if (!text) return null;
+            if (!text) {
+                return null;
+            }
             return text.toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
         }
 
-        function ratingBadgeClass(value) {
-            const key = ratingKeyFromText(value);
-            if (!key) return '';
-            if (key.includes('SELL')) return 'sell';
-            if (key.includes('BUY')) return 'buy';
-            return 'neutral';
-        }
-
-        function updateRatingBadge(rating) {
-            if (!rating) {
-                symbolRatingBadge.style.display = 'none';
-                symbolRatingBadge.className = 'pill';
-                symbolRatingBadge.textContent = 'Rating: —';
-                return;
-            }
-            symbolRatingBadge.style.display = 'inline-flex';
-            const badgeClass = ratingBadgeClass(rating);
-            symbolRatingBadge.className = badgeClass ? `pill ${badgeClass}` : 'pill';
-            symbolRatingBadge.textContent = `Rating: ${rating}`;
-        }
-
-        function formatSignedNumber(value) {
-            const numeric = typeof value === 'number' ? value : Number(value);
-            if (!Number.isFinite(numeric)) {
-                return null;
-            }
-            const absValue = Math.abs(numeric);
-            const formatted = numberFormatter.format(absValue);
-            if (numeric > 0) return `+${formatted}`;
-            if (numeric < 0) return `-${formatted}`;
-            return formatted;
-        }
-
-        function formatPercentValue(value) {
-            const signed = formatSignedNumber(value);
-            return signed ? `${signed}%` : null;
-        }
-
-        function formatValue(value, format) {
+        function formatRating(value) {
             if (value === null || value === undefined || value === '') {
                 return '—';
             }
-            if (format === 'percent') {
-                const percent = formatPercentValue(value);
-                return percent ?? '—';
+            const key = normaliseRatingText(value);
+            if (!key) {
+                return value;
             }
-            if (format === 'compact') {
-                const numeric = typeof value === 'number' ? value : Number(value);
-                if (Number.isFinite(numeric)) {
-                    return compactFormatter.format(numeric);
-                }
-            }
-            if (typeof value === 'number' && Number.isFinite(value)) {
-                return numberFormatter.format(value);
+            const translation = ratingTranslationMap[key];
+            if (translation) {
+                return translation === value ? translation : `${translation} (${value})`;
             }
             return value;
         }
 
-        function createInfoItem(label, valueText) {
-            const container = document.createElement('div');
-            container.className = 'info-item';
-            const labelEl = document.createElement('span');
-            labelEl.textContent = label;
-            const valueEl = document.createElement('strong');
-            valueEl.textContent = valueText ?? '—';
-            container.append(labelEl, valueEl);
-            return container;
+        function formatPercent(value) {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return '—';
+            }
+            return `${percentFormatter.format(numeric)}%`;
         }
 
-        function highlightActiveRow(symbol) {
-            const rows = changesBody.querySelectorAll('tr');
-            rows.forEach((row) => {
-                if (!row.dataset.symbol) {
-                    row.classList.remove('active');
-                    return;
+        function formatAttributeValue(value, format) {
+            if (value === null || value === undefined || value === '') {
+                return '—';
+            }
+            if (format === 'percent') {
+                return formatPercent(value);
+            }
+            if (format === 'compact') {
+                const numeric = Number(value);
+                return Number.isFinite(numeric) ? compactFormatter.format(numeric) : String(value);
+            }
+            if (format === 'number') {
+                return formatNumber(value);
+            }
+            if (typeof value === 'number') {
+                return numberFormatter.format(value);
+            }
+            return String(value);
+        }
+
+        function matchesSearch(item, query) {
+            if (!query) {
+                return true;
+            }
+            const symbolText = String(item.symbol ?? '').toLowerCase();
+            const ratingText = String(item.analyst_rating ?? '').toLowerCase();
+            return symbolText.includes(query) || ratingText.includes(query);
+        }
+
+        function matchesRating(item) {
+            if (ratingFilter === 'all') {
+                return true;
+            }
+            const score = Number(item?.rating_score);
+            if (!Number.isFinite(score)) {
+                return false;
+            }
+            if (ratingFilter === 'bullish') {
+                return score >= 3;
+            }
+            if (ratingFilter === 'neutral') {
+                return score === 2;
+            }
+            if (ratingFilter === 'bearish') {
+                return score <= 1;
+            }
+            return true;
+        }
+
+        function matchesPrice(item) {
+            const priceValue = Number(item?.price);
+            const hasMin = priceRange.min !== null;
+            const hasMax = priceRange.max !== null;
+            if (!hasMin && !hasMax) {
+                return true;
+            }
+            if (!Number.isFinite(priceValue)) {
+                return false;
+            }
+            if (hasMin && priceValue < priceRange.min) {
+                return false;
+            }
+            if (hasMax && priceValue > priceRange.max) {
+                return false;
+            }
+            return true;
+        }
+
+        function applyFilter(items) {
+            const query = filterText.trim().toLowerCase();
+            return items.filter((item) => {
+                if (!matchesSearch(item, query)) {
+                    return false;
                 }
-                row.classList.toggle('active', symbol && row.dataset.symbol === symbol);
+                if (!matchesRating(item)) {
+                    return false;
+                }
+                if (!matchesPrice(item)) {
+                    return false;
+                }
+                return true;
             });
         }
 
-        function resetSymbolView() {
+        function getSortValue(item, key) {
+            const value = item?.[key];
+            if (key === 'price') {
+                return Number.isFinite(Number(value)) ? Number(value) : null;
+            }
+            if (key === 'retrieved_at') {
+                if (!value) {
+                    return null;
+                }
+                const timestamp = new Date(value).getTime();
+                return Number.isNaN(timestamp) ? null : timestamp;
+            }
+            if (key === 'symbol' || key === 'analyst_rating') {
+                return value ? String(value).toLowerCase() : '';
+            }
+            return value ?? null;
+        }
+
+        function compareValues(aValue, bValue) {
+            const aMissing = aValue === null || aValue === undefined || aValue === '';
+            const bMissing = bValue === null || bValue === undefined || bValue === '';
+            if (aMissing && bMissing) {
+                return 0;
+            }
+            if (aMissing) {
+                return 1;
+            }
+            if (bMissing) {
+                return -1;
+            }
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                return aValue - bValue;
+            }
+            const textA = String(aValue);
+            const textB = String(bValue);
+            return textA.localeCompare(textB, 'zh-Hans-u-co-pinyin', { sensitivity: 'base' });
+        }
+
+        function sortItems(items) {
+            if (!Array.isArray(items) || !items.length) {
+                return items;
+            }
+            const { key, direction } = sortState;
+            const sorted = [...items];
+            sorted.sort((a, b) => {
+                const aValue = getSortValue(a, key);
+                const bValue = getSortValue(b, key);
+                const base = compareValues(aValue, bValue);
+                return direction === 'asc' ? base : -base;
+            });
+            return sorted;
+        }
+
+        function updateSortIndicators() {
+            sortButtons.forEach((button) => {
+                const key = button.dataset.sortKey;
+                const isActive = sortState.key === key;
+                button.dataset.active = isActive ? 'true' : 'false';
+                const indicator = sortIndicators[key];
+                if (!indicator) {
+                    return;
+                }
+                indicator.textContent = isActive
+                    ? sortState.direction === 'asc'
+                        ? '↑'
+                        : '↓'
+                    : '—';
+            });
+        }
+
+        sortButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const key = button.dataset.sortKey;
+                if (!key) {
+                    return;
+                }
+                if (sortState.key === key) {
+                    sortState = {
+                        key,
+                        direction: sortState.direction === 'asc' ? 'desc' : 'asc',
+                    };
+                } else {
+                    sortState = { key, direction: key === 'symbol' ? 'asc' : 'desc' };
+                }
+                updateSortIndicators();
+                renderSymbolRows(false);
+            });
+        });
+
+        updateSortIndicators();
+
+        function updateTimeframeButtons() {
+            timeframeButtons.forEach((button) => {
+                const key = button.dataset.timeframe;
+                button.dataset.active = key === currentTimeframe ? 'true' : 'false';
+            });
+        }
+
+        updateTimeframeButtons();
+
+        timeframeButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const value = button.dataset.timeframe;
+                if (!value || currentTimeframe === value) {
+                    return;
+                }
+                currentTimeframe = value;
+                updateTimeframeButtons();
+                updateHistoryChart(selectedSymbol);
+            });
+        });
+
+        if (smaToggle) {
+            showSma = Boolean(smaToggle.checked);
+            smaToggle.addEventListener('change', () => {
+                showSma = Boolean(smaToggle.checked);
+                updateHistoryChart(selectedSymbol);
+            });
+        }
+
+        function priceFilterActive() {
+            return priceRange.min !== null || priceRange.max !== null;
+        }
+
+        function updatePriceFilterUI() {
+            if (priceResetButton) {
+                priceResetButton.disabled = !priceFilterActive();
+            }
+            if (priceMinInput && !priceMinInput.value && Number.isFinite(availablePriceRange.min)) {
+                priceMinInput.placeholder = formatNumber(availablePriceRange.min);
+            }
+            if (priceMaxInput && !priceMaxInput.value && Number.isFinite(availablePriceRange.max)) {
+                priceMaxInput.placeholder = formatNumber(availablePriceRange.max);
+            }
+        }
+
+        function updatePriceRangeDefaults(items) {
+            const values = (Array.isArray(items) ? items : [])
+                .map((item) => Number(item?.price))
+                .filter((value) => Number.isFinite(value));
+            if (!values.length) {
+                availablePriceRange = { min: null, max: null };
+                updatePriceFilterUI();
+                return;
+            }
+            availablePriceRange = {
+                min: Math.min(...values),
+                max: Math.max(...values),
+            };
+            updatePriceFilterUI();
+        }
+
+        ratingFilterButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const value = button.dataset.ratingFilter;
+                if (!value || ratingFilter === value) {
+                    return;
+                }
+                ratingFilter = value;
+                ratingFilterButtons.forEach((chip) => {
+                    chip.dataset.active = chip.dataset.ratingFilter === ratingFilter ? 'true' : 'false';
+                });
+                renderSymbolRows(false);
+            });
+        });
+
+        function parseInputValue(value) {
+            if (value === null || value === undefined) {
+                return null;
+            }
+            const text = String(value).trim();
+            if (!text) {
+                return null;
+            }
+            const numeric = Number(text);
+            return Number.isFinite(numeric) ? numeric : null;
+        }
+
+        if (priceMinInput) {
+            priceMinInput.addEventListener('input', () => {
+                priceRange.min = parseInputValue(priceMinInput.value);
+                updatePriceFilterUI();
+                renderSymbolRows(false);
+            });
+        }
+
+        if (priceMaxInput) {
+            priceMaxInput.addEventListener('input', () => {
+                priceRange.max = parseInputValue(priceMaxInput.value);
+                updatePriceFilterUI();
+                renderSymbolRows(false);
+            });
+        }
+
+        if (priceResetButton) {
+            priceResetButton.addEventListener('click', () => {
+                priceRange = { min: null, max: null };
+                if (priceMinInput) {
+                    priceMinInput.value = '';
+                }
+                if (priceMaxInput) {
+                    priceMaxInput.value = '';
+                }
+                updatePriceFilterUI();
+                renderSymbolRows(false);
+            });
+        }
+
+        function highlightSelectedRow() {
+            document.querySelectorAll('[data-symbol-row="true"]').forEach((row) => {
+                row.classList.toggle('active', row.dataset.symbol === selectedSymbol);
+            });
+        }
+
+        function resetSelection() {
             selectedSymbol = null;
             if (historyChart) {
                 historyChart.destroy();
                 historyChart = null;
             }
-            symbolTitle.textContent = 'Price & Rating History';
-            chartCaption.textContent = 'Select a row above to load price history.';
-            updateRatingBadge(null);
-            companyNameEl.textContent = 'Company Overview';
-            symbolMetaEl.textContent = 'Select a row to view sector and industry insights.';
-            symbolDescriptionEl.textContent = 'Select a row above to view company description and key figures.';
-            symbolAttributesEl.innerHTML = '';
-            symbolAttributesEl.style.display = 'block';
-            const attrMessage = document.createElement('p');
-            attrMessage.className = 'muted';
-            attrMessage.textContent = 'No symbol selected.';
-            symbolAttributesEl.appendChild(attrMessage);
-            symbolMetricsEl.innerHTML = '';
-            symbolMetricsEl.style.display = 'block';
-            const metricMessage = document.createElement('p');
-            metricMessage.className = 'muted';
-            metricMessage.textContent = 'Select a row to inspect price statistics.';
-            symbolMetricsEl.appendChild(metricMessage);
-            highlightActiveRow(null);
+            chartMessage.textContent = '请选择上方股票查看价格历史。';
+            infoSymbol.textContent = '—';
+            infoPrice.textContent = '—';
+            infoRating.textContent = '—';
+            infoUpdated.textContent = '—';
+            infoMeta.textContent = '—';
+            infoDescription.textContent = '暂无简介。';
+            if (infoPeriod) {
+                infoPeriod.textContent = '暂无数据区间。';
+            }
+            if (metricChange) {
+                metricChange.textContent = '—';
+            }
+            if (metricChangePct) {
+                metricChangePct.textContent = '—';
+                metricChangePct.classList.add('muted');
+            }
+            if (metricHigh) {
+                metricHigh.textContent = '—';
+            }
+            if (metricLow) {
+                metricLow.textContent = '—';
+            }
+            if (metricAverage) {
+                metricAverage.textContent = '—';
+            }
+            if (ratingStatsList) {
+                ratingStatsList.innerHTML = '<li class="muted">暂无评级记录。</li>';
+            }
+            if (attributeList) {
+                attributeList.innerHTML = '<p>暂无关键指标。</p>';
+            }
         }
 
-        function setStatus(status, lastRun) {
-            statusBadge.className = `status ${status}`;
-            statusBadge.textContent = status === 'ok' ? 'Running' : 'Degraded';
+        function renderSymbolRows(autoSelect = false) {
+            const items = sortItems(applyFilter(allSymbols));
+            if (!items.length) {
+                const emptyText = allSymbols.length ? '没有符合条件的股票。' : '暂无监控的股票。';
+                symbolsBody.innerHTML = `<tr><td colspan="4" class="muted">${emptyText}</td></tr>`;
+                if (!allSymbols.length) {
+                    resetSelection();
+                }
+                return;
+            }
+
+            symbolsBody.innerHTML = '';
+            items.forEach((item) => {
+                const tr = document.createElement('tr');
+                tr.dataset.symbol = item.symbol;
+                tr.dataset.symbolRow = 'true';
+                if (item.symbol === selectedSymbol) {
+                    tr.classList.add('active');
+                }
+                tr.innerHTML = `
+                    <td>${item.symbol}</td>
+                    <td>${formatNumber(item.price)}</td>
+                    <td>${formatRating(item.analyst_rating)}</td>
+                    <td>${formatDate(item.retrieved_at)}</td>
+                `;
+                tr.addEventListener('click', () => {
+                    if (selectedSymbol !== item.symbol) {
+                        selectSymbol(item.symbol);
+                    }
+                });
+                symbolsBody.appendChild(tr);
+            });
+
+            if (autoSelect) {
+                const stillSelected = items.some((item) => item.symbol === selectedSymbol);
+                if (!stillSelected) {
+                    selectSymbol(items[0].symbol);
+                    return;
+                }
+            }
+
+            highlightSelectedRow();
+        }
+
+        function renderSymbols(items, { autoSelect = false } = {}) {
+            allSymbols = Array.isArray(items) ? items : [];
+            updatePriceRangeDefaults(allSymbols);
+            if (!allSymbols.length) {
+                symbolsBody.innerHTML = '<tr><td colspan="4" class="muted">暂无监控的股票。</td></tr>';
+                resetSelection();
+                return;
+            }
+            renderSymbolRows(autoSelect || !selectedSymbol);
+        }
+
+        async function refreshSymbols({ autoSelect = false } = {}) {
+            try {
+                const response = await fetch('/api/symbols');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                renderSymbols(data.items ?? [], { autoSelect });
+            } catch (error) {
+                console.error('无法刷新股票列表', error);
+            }
+        }
+
+        function renderChanges(items) {
+            if (!Array.isArray(items) || !items.length) {
+                changesBody.innerHTML = '<tr><td colspan="6" class="muted">暂无评级变动记录。</td></tr>';
+                return;
+            }
+
+            changesBody.innerHTML = '';
+            items.forEach((item) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.symbol}</td>
+                    <td>${formatDate(item.changed_at)}</td>
+                    <td>${formatRating(item.old_rating)}</td>
+                    <td>${formatRating(item.new_rating)}</td>
+                    <td>${formatNumber(item.price_before)}</td>
+                    <td>${formatNumber(item.price_after)}</td>
+                `;
+                tr.addEventListener('click', () => {
+                    if (selectedSymbol !== item.symbol) {
+                        selectSymbol(item.symbol);
+                    }
+                });
+                changesBody.appendChild(tr);
+            });
+        }
+
+        async function refreshChanges() {
+            try {
+                const response = await fetch('/api/rating_changes?limit=60');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                renderChanges(data.items ?? []);
+            } catch (error) {
+                console.error('无法刷新评级变动', error);
+            }
+        }
+
+        function updateStatus(status, lastRun, latestSnapshot, totals) {
+            const isOk = status === 'ok';
+            statusText.textContent = isOk ? '运行中' : '异常';
+            statusText.className = `status-label ${isOk ? 'status-ok' : 'status-degraded'}`;
             lastRunEl.textContent = formatDate(lastRun);
+            totalSnapshotsEl.textContent = totals?.snapshots ?? 0;
+            totalChangesEl.textContent = totals?.changes ?? 0;
+            latestSnapshotEl.textContent = formatDate(latestSnapshot);
         }
 
         async function refreshStatus() {
@@ -432,258 +1279,146 @@
                     throw new Error(`HTTP ${response.status}`);
                 }
                 const data = await response.json();
-                setStatus(data.status, data.state.last_run);
-                totalSnapshotsEl.textContent = data.state.total_snapshots;
-                totalChangesEl.textContent = data.state.total_rating_changes;
-                latestSnapshotEl.textContent = formatDate(data.latest_snapshot);
+                updateStatus(data.status, data.state?.last_run, data.latest_snapshot, {
+                    snapshots: data.state?.total_snapshots,
+                    changes: data.state?.total_rating_changes,
+                });
             } catch (error) {
-                console.error('Failed to refresh status', error);
+                console.error('无法刷新状态', error);
             }
         }
 
-        function renderChanges(items) {
-            if (!Array.isArray(items) || !items.length) {
-                changesBody.innerHTML = '<tr><td colspan="6" class="muted">No rating changes recorded yet.</td></tr>';
-                resetSymbolView();
-                return;
+        function filterHistoryByTimeframe(items) {
+            const duration = timeframeDurations[currentTimeframe];
+            if (!duration || !Array.isArray(items) || !items.length) {
+                return Array.isArray(items) ? items : [];
             }
-            changesBody.innerHTML = '';
-            items.forEach((item) => {
-                const tr = document.createElement('tr');
-                tr.dataset.symbol = item.symbol;
-                if (item.symbol === selectedSymbol) {
-                    tr.classList.add('active');
+            const latestTimestamp = new Date(items[items.length - 1].retrieved_at).getTime();
+            if (Number.isNaN(latestTimestamp)) {
+                return items;
+            }
+            const threshold = latestTimestamp - duration;
+            return items.filter((item) => {
+                const timestamp = new Date(item.retrieved_at).getTime();
+                if (Number.isNaN(timestamp)) {
+                    return true;
                 }
-                tr.innerHTML = `
-                    <td>${item.symbol}</td>
-                    <td>${formatDate(item.changed_at)}</td>
-                    <td>${item.old_rating ?? '—'}</td>
-                    <td>${item.new_rating ?? '—'}</td>
-                    <td>${item.price_before !== null && item.price_before !== undefined ? formatValue(item.price_before, 'number') : '—'}</td>
-                    <td>${item.price_after !== null && item.price_after !== undefined ? formatValue(item.price_after, 'number') : '—'}</td>
-                `;
-                tr.addEventListener('click', () => {
-                    if (selectedSymbol !== item.symbol) {
-                        loadHistory(item.symbol);
-                    }
-                });
-                changesBody.appendChild(tr);
+                return timestamp >= threshold;
             });
-            if (!selectedSymbol && items.length) {
-                loadHistory(items[0].symbol);
-            } else {
-                highlightActiveRow(selectedSymbol);
-
-            }
         }
 
-        async function refreshChanges() {
-            try {
-                const response = await fetch('/api/rating_changes?limit=100');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+        function calculateSma(items, period = smaPeriod) {
+            if (!Array.isArray(items) || !items.length || period <= 1) {
+                return [];
+            }
+            const values = items.map((item) => {
+                const price = Number(item?.price);
+                return Number.isFinite(price) ? price : null;
+            });
+            const result = [];
+            let sum = 0;
+            let validCount = 0;
+            for (let index = 0; index < values.length; index += 1) {
+                const value = values[index];
+                if (value !== null) {
+                    sum += value;
+                    validCount += 1;
                 }
-                const data = await response.json();
-                renderChanges(data.items ?? []);
-            } catch (error) {
-                console.error('Failed to refresh rating changes', error);
-            }
-        }
-
-        function renderSymbolMetrics(metrics, profile) {
-            symbolMetricsEl.innerHTML = '';
-            const items = [];
-            const priceMetrics = metrics?.price ?? {};
-            const ratingMetrics = metrics?.ratings ?? {};
-            const period = metrics?.period ?? {};
-
-            if (priceMetrics.change !== undefined && priceMetrics.change !== null) {
-                const changeText = formatSignedNumber(priceMetrics.change);
-                const pctText = formatPercentValue(priceMetrics.change_pct);
-                const combined = [changeText, pctText ? `(${pctText})` : null].filter(Boolean).join(' ');
-                items.push(createInfoItem('Price Change', combined || '—'));
-            }
-            if (priceMetrics.max !== undefined) {
-                items.push(createInfoItem('Period High', formatValue(priceMetrics.max, 'number')));
-            }
-            if (priceMetrics.min !== undefined) {
-                items.push(createInfoItem('Period Low', formatValue(priceMetrics.min, 'number')));
-            }
-            if (priceMetrics.average !== undefined) {
-                items.push(createInfoItem('Average Price', formatValue(priceMetrics.average, 'number')));
-            }
-            if (profile?.retrieved_at) {
-                items.push(createInfoItem('Last Updated', formatDate(profile.retrieved_at)));
-            }
-            if (period.start || period.end) {
-                items.push(createInfoItem('Period Range', `${formatDate(period.start)} → ${formatDate(period.end)}`));
-            }
-
-            const counts = ratingMetrics.counts || {};
-            if (Object.keys(counts).length) {
-                const ratingItem = document.createElement('div');
-                ratingItem.className = 'info-item';
-                const labelEl = document.createElement('span');
-                labelEl.textContent = 'Rating Distribution';
-                ratingItem.appendChild(labelEl);
-                const listEl = document.createElement('ul');
-                listEl.className = 'ratings-list';
-                Object.entries(counts)
-                    .sort((a, b) => b[1] - a[1])
-                    .forEach(([rating, count]) => {
-                        const li = document.createElement('li');
-                        li.textContent = `${rating}: ${count}`;
-                        listEl.appendChild(li);
-                    });
-                ratingItem.appendChild(listEl);
-                items.push(ratingItem);
-            }
-
-            if (!items.length) {
-                symbolMetricsEl.style.display = 'block';
-                const empty = document.createElement('p');
-                empty.className = 'muted';
-                empty.textContent = 'No price statistics available for this selection yet.';
-                symbolMetricsEl.appendChild(empty);
-            } else {
-                symbolMetricsEl.style.display = '';
-                items.forEach((item) => symbolMetricsEl.appendChild(item));
-            }
-        }
-
-        function renderSymbolDetails(symbol, data) {
-            const profile = data?.profile;
-            const metrics = data?.metrics;
-            if (!profile) {
-                resetSymbolView();
-                return;
-            }
-
-            const attributes = Array.isArray(profile.attributes) ? profile.attributes : [];
-
-            companyNameEl.textContent = profile.name ? `${profile.name} (${symbol})` : `${symbol}`;
-            const metaParts = [profile.sector, profile.industry].filter(Boolean);
-            symbolMetaEl.textContent = metaParts.length ? metaParts.join(' • ') : '—';
-            symbolDescriptionEl.textContent = profile.description || '—';
-            updateRatingBadge(data?.latest?.analyst_rating ?? null);
-
-            symbolAttributesEl.innerHTML = '';
-            if (attributes.length) {
-                symbolAttributesEl.style.display = '';
-                attributes.forEach((attribute) => {
-                    const value = formatValue(attribute.value, attribute.format);
-                    symbolAttributesEl.appendChild(createInfoItem(attribute.label, value));
-                });
-            } else {
-                symbolAttributesEl.style.display = 'block';
-                const empty = document.createElement('p');
-                empty.className = 'muted';
-                empty.textContent = 'No additional fundamentals captured for this symbol yet.';
-                symbolAttributesEl.appendChild(empty);
-            }
-
-            renderSymbolMetrics(metrics, profile);
-        }
-
-        function renderHistoryChart(symbol, items, metrics) {
-            if (!Array.isArray(items) || !items.length) {
-                if (historyChart) {
-                    historyChart.destroy();
-                    historyChart = null;
+                if (index >= period) {
+                    const removed = values[index - period];
+                    if (removed !== null) {
+                        sum -= removed;
+                        validCount -= 1;
+                    }
                 }
-                symbolTitle.textContent = `${symbol} Price & Rating History`;
-                chartCaption.textContent = `No price history recorded for ${symbol} yet.`;
-                return;
+                if (validCount === period) {
+                    result.push(sum / period);
+                } else {
+                    result.push(null);
+                }
             }
+            return result;
+        }
 
+        function buildChartDatasets(items) {
             const labels = items.map((item) => formatDate(item.retrieved_at));
-            const prices = items.map((item) => (item.price !== undefined ? item.price : null));
-            const ratingScores = items.map((item) => (item.rating_score !== undefined ? item.rating_score : null));
-            const ratingSeries = items.map((item) => item.analyst_rating ?? null);
-            const ratingLabels = Object.fromEntries(
-                Object.entries(metrics?.ratings?.score_labels ?? {}).map(([key, value]) => [Number(key), value])
-            );
-            const period = metrics?.period ?? {};
-            const startText = period.start ? formatDate(period.start) : null;
-            const endText = period.end ? formatDate(period.end) : null;
-            const periodText = startText && endText ? ` · ${startText} → ${endText}` : '';
+            const prices = items.map((item) => {
+                const value = Number(item?.price);
+                return Number.isFinite(value) ? value : null;
+            });
+            const datasets = [
+                {
+                    label: '价格',
+                    data: prices,
+                    tension: 0.3,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                    fill: true,
+                    spanGaps: true,
+                    pointRadius: 0,
+                },
+            ];
+            if (showSma) {
+                const smaValues = calculateSma(items);
+                datasets.push({
+                    label: `${smaPeriod}期均线`,
+                    data: smaValues,
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                    fill: false,
+                    spanGaps: true,
+                    tension: 0.2,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                });
+            }
+            return { labels, datasets };
+        }
 
-            symbolTitle.textContent = `${symbol} Price & Rating History`;
-            chartCaption.textContent = `Price & rating history for ${symbol}${periodText}`;
-
+        function updateHistoryChart(symbol) {
+            if (!symbol || !historyDataCache.has(symbol)) {
+                return;
+            }
+            const cacheEntry = historyDataCache.get(symbol);
+            const rawItems = Array.isArray(cacheEntry?.items) ? cacheEntry.items : [];
             if (historyChart) {
                 historyChart.destroy();
+                historyChart = null;
             }
-
-            historyChart = new Chart(chartCtx, {
+            if (!rawItems.length) {
+                chartMessage.textContent = `${symbol} 暂无价格记录。`;
+                return;
+            }
+            const filteredItems = filterHistoryByTimeframe(rawItems);
+            if (!filteredItems.length) {
+                chartMessage.textContent = `${symbol} 暂无所选区间数据。`;
+                return;
+            }
+            const { labels, datasets } = buildChartDatasets(filteredItems);
+            chartMessage.textContent = '';
+            historyChart = new Chart(chartCanvas, {
                 type: 'line',
-                data: {
-                    labels,
-                    datasets: [
-                        {
-                            label: 'Price',
-                            data: prices,
-                            tension: 0.3,
-                            borderColor: '#38bdf8',
-                            backgroundColor: 'rgba(56, 189, 248, 0.25)',
-                            fill: true,
-                            pointRadius: 0,
-                            spanGaps: true,
-                            yAxisID: 'y',
-                        },
-                        {
-                            label: 'Analyst Rating',
-                            data: ratingScores,
-                            tension: 0,
-                            borderColor: '#f97316',
-                            backgroundColor: 'rgba(249, 115, 22, 0.15)',
-                            fill: false,
-                            pointRadius: 3,
-                            spanGaps: true,
-                            stepped: true,
-                            yAxisID: 'y1',
-                            custom: { ratings: ratingSeries },
-                        },
-                    ],
-                },
+                data: { labels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { intersect: false, mode: 'index' },
                     scales: {
                         x: {
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#475569' },
+                            grid: { color: 'rgba(148, 163, 184, 0.15)' },
                         },
                         y: {
-                            ticks: { color: '#94a3b8' },
-                            grid: { color: 'rgba(148, 163, 184, 0.12)' },
-                            title: { display: true, text: 'Price', color: '#94a3b8' },
-                        },
-                        y1: {
-                            position: 'right',
-                            ticks: {
-                                color: '#f8fafc',
-                                stepSize: 1,
-                                callback: (value) => ratingLabels[value] ?? value,
-                            },
-                            grid: { drawOnChartArea: false },
-                            min: -0.2,
-                            max: 4.2,
-                            title: { display: true, text: 'Rating', color: '#f8fafc' },
+                            ticks: { color: '#475569' },
+                            grid: { color: 'rgba(148, 163, 184, 0.15)' },
+                            title: { display: true, text: '价格' },
                         },
                     },
                     plugins: {
-                        legend: { labels: { color: '#e2e8f0' } },
+                        legend: { labels: { color: '#1e293b' } },
                         tooltip: {
                             callbacks: {
-                                label: (ctx) => {
-                                    if (ctx.dataset.yAxisID === 'y1') {
-                                        const rating = ctx.dataset.custom?.ratings?.[ctx.dataIndex];
-                                        return `Rating: ${rating ?? 'n/a'}`;
-                                    }
-                                    return `Price: ${formatValue(ctx.parsed.y, 'number')}`;
-                                },
+                                label: (ctx) => `价格：${formatNumber(ctx.parsed.y)}`,
                             },
                         },
                     },
@@ -691,35 +1426,175 @@
             });
         }
 
+        function renderPeriod(period) {
+            if (!infoPeriod) {
+                return;
+            }
+            const start = period?.start;
+            const end = period?.end;
+            if (!start || !end) {
+                infoPeriod.textContent = '暂无数据区间。';
+                return;
+            }
+            infoPeriod.textContent = `覆盖区间：${formatDate(start)} 至 ${formatDate(end)}`;
+        }
+
+        function renderMetrics(metrics) {
+            const priceMetrics = metrics?.price ?? {};
+            if (metricChange) {
+                metricChange.textContent = formatNumber(priceMetrics.change);
+            }
+            if (metricChangePct) {
+                const hasValue = Number.isFinite(Number(priceMetrics.change_pct));
+                metricChangePct.textContent = hasValue
+                    ? formatPercent(priceMetrics.change_pct)
+                    : '—';
+                metricChangePct.classList.toggle('muted', !hasValue);
+            }
+            if (metricHigh) {
+                metricHigh.textContent = formatNumber(priceMetrics.max);
+            }
+            if (metricLow) {
+                metricLow.textContent = formatNumber(priceMetrics.min);
+            }
+            if (metricAverage) {
+                metricAverage.textContent = formatNumber(priceMetrics.average);
+            }
+        }
+
+        function renderRatingStats(ratings) {
+            if (!ratingStatsList) {
+                return;
+            }
+            ratingStatsList.innerHTML = '';
+            const entries = Object.entries(ratings?.counts ?? {}).map(([label, count]) => [
+                label,
+                Number(count) || 0,
+            ]);
+            if (!entries.length) {
+                const placeholder = document.createElement('li');
+                placeholder.className = 'muted';
+                placeholder.textContent = '暂无评级记录。';
+                ratingStatsList.appendChild(placeholder);
+                return;
+            }
+            const total = entries.reduce((sum, [, count]) => sum + count, 0);
+            entries.sort((a, b) => b[1] - a[1]);
+            entries.forEach(([label, count]) => {
+                const li = document.createElement('li');
+                const labelSpan = document.createElement('span');
+                labelSpan.textContent = formatRating(label);
+                const countSpan = document.createElement('span');
+                countSpan.className = 'count';
+                if (total > 0) {
+                    const pct = (count / total) * 100;
+                    countSpan.textContent = `${count} (${ratioFormatter.format(pct)}%)`;
+                } else {
+                    countSpan.textContent = String(count);
+                }
+                li.append(labelSpan, countSpan);
+                ratingStatsList.appendChild(li);
+            });
+        }
+
+        function renderAttributes(attributes) {
+            if (!attributeList) {
+                return;
+            }
+            attributeList.innerHTML = '';
+            if (!Array.isArray(attributes) || !attributes.length) {
+                const placeholder = document.createElement('p');
+                placeholder.textContent = '暂无关键指标。';
+                attributeList.appendChild(placeholder);
+                return;
+            }
+            attributes.forEach((attribute) => {
+                const wrapper = document.createElement('div');
+                const labelEl = document.createElement('span');
+                const labelText = attributeLabelMap[attribute?.label] ?? attribute?.label ?? '—';
+                labelEl.textContent = labelText;
+                const valueEl = document.createElement('strong');
+                valueEl.textContent = formatAttributeValue(attribute?.value, attribute?.format);
+                wrapper.append(labelEl, valueEl);
+                attributeList.appendChild(wrapper);
+            });
+        }
+
+        function renderHistory(symbol, data) {
+            const items = Array.isArray(data?.items) ? data.items : [];
+            const profile = data?.profile ?? {};
+            const latest = data?.latest ?? {};
+            const metrics = data?.metrics ?? {};
+
+            infoSymbol.textContent = profile.name ? `${profile.name} (${symbol})` : symbol;
+            infoPrice.textContent = formatNumber(latest.price);
+            const ratingValue = latest.analyst_rating ?? metrics?.ratings?.current;
+            infoRating.textContent = formatRating(ratingValue);
+            infoUpdated.textContent = formatDate(latest.retrieved_at ?? profile.retrieved_at);
+            const metaText = [profile.sector, profile.industry].filter(Boolean).join(' / ');
+            infoMeta.textContent = metaText || '—';
+            infoDescription.textContent = profile.description || '暂无简介。';
+            renderPeriod(metrics?.period);
+            renderMetrics(metrics);
+            renderRatingStats(metrics?.ratings);
+            renderAttributes(profile.attributes);
+            historyDataCache.set(symbol, { items });
+            updateHistoryChart(symbol);
+        }
+
         async function loadHistory(symbol) {
-            chartCaption.textContent = `Loading analytics for ${symbol}…`;
             selectedSymbol = symbol;
-            highlightActiveRow(symbol);
+            highlightSelectedRow();
+            chartMessage.textContent = `正在加载 ${symbol} 的历史数据…`;
             try {
                 const response = await fetch(`/api/symbol/${encodeURIComponent(symbol)}/history?limit=200`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
                 }
                 const data = await response.json();
-                const items = data.items ?? [];
-                renderHistoryChart(symbol, items, data.metrics ?? {});
-                renderSymbolDetails(symbol, data);
-                highlightActiveRow(symbol);
+                renderHistory(symbol, data);
             } catch (error) {
-                console.error(`Failed to load history for ${symbol}`, error);
-                if (historyChart) {
-                    historyChart.destroy();
-                    historyChart = null;
+                console.error(`无法加载 ${symbol} 的历史数据`, error);
+                if (historyDataCache.has(symbol)) {
+                    updateHistoryChart(symbol);
+                    chartMessage.textContent = `无法更新 ${symbol} 的最新数据，已显示缓存结果。`;
+                } else {
+                    if (historyChart) {
+                        historyChart.destroy();
+                        historyChart = null;
+                    }
+                    chartMessage.textContent = `无法加载 ${symbol} 的历史数据。`;
                 }
-                chartCaption.textContent = `Unable to load history for ${symbol}.`;
             }
         }
 
+        function selectSymbol(symbol) {
+            selectedSymbol = symbol;
+            highlightSelectedRow();
+            loadHistory(symbol);
+        }
+
+        if (symbolFilterInput) {
+            symbolFilterInput.addEventListener('input', () => {
+                filterText = symbolFilterInput.value;
+                renderSymbolRows(false);
+            });
+            symbolFilterInput.addEventListener('search', () => {
+                filterText = symbolFilterInput.value;
+                renderSymbolRows(false);
+            });
+        }
+
         async function bootstrap() {
-            resetSymbolView();
-            await Promise.all([refreshStatus(), refreshChanges()]);
+            resetSelection();
+            await Promise.all([
+                refreshStatus(),
+                refreshSymbols({ autoSelect: true }),
+                refreshChanges(),
+            ]);
 
             setInterval(refreshStatus, 60000);
+            setInterval(() => refreshSymbols({ autoSelect: false }), 120000);
             setInterval(refreshChanges, 120000);
         }
 
